@@ -2,9 +2,6 @@
 using Hearthstone_Deck_Tracker.API;
 using Hearthstone_Deck_Tracker.Plugins;
 using System.Windows.Controls;
-using System.Security.Principal;
-using MahApps.Metro.Controls.Dialogs;
-using Hearthstone_Deck_Tracker.Utility.Logging;
 
 namespace HDT_BGrank
 {
@@ -44,7 +41,6 @@ namespace HDT_BGrank
             MenuItem.IsChecked = true;
             rank = new BGrank();
             GameEvents.OnGameStart.Add(rank.OnGameStart);
-            GameEvents.OnInMenu.Add(rank.Reset);
             GameEvents.OnTurnStart.Add(rank.OnTurnStart);
         }
 
@@ -55,10 +51,7 @@ namespace HDT_BGrank
 
         public void OnUpdate()
         {
-            if (!rank.done && Core.Game.IsBattlegroundsMatch && !Core.Game.IsInMenu)
-            {
-                rank.OnUpdate();
-            }
+            rank.OnUpdate();
             leaderBoardPanel.OnUpdate(rank);
         }
 
@@ -92,7 +85,7 @@ namespace HDT_BGrank
 
         public Version Version
         {
-            get { return new Version(1, 0, 0); }
+            get { return new Version(1, 0, 1); }
         }
 
     }

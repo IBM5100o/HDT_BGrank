@@ -17,10 +17,16 @@ namespace HDT_BGrank
             InitializeComponent();
             OverlayExtensions.SetIsOverlayHitTestVisible(DeleteButton, true);
             OverlayExtensions.SetIsOverlayHitTestVisible(HiddenButton, true);
+            Visibility = Visibility.Hidden;
         }
         public void OnUpdate(BGrank rank)
         {
-            if (!finished && rank.done)
+            if (Core.Game.IsInMenu)
+            {
+                Visibility = Visibility.Hidden;
+                finished = false;
+            }
+            else if (!finished && rank.done)
             {
                 int i = 0;
                 string allText = "\n";
@@ -33,11 +39,6 @@ namespace HDT_BGrank
                 LeaderText.Text = allText;
                 finished = true;
                 Visibility = Visibility.Visible;
-            }
-            if (Core.Game.IsInMenu) 
-            { 
-                Visibility = Visibility.Hidden;
-                finished = false;
             }
         }
         public void Dispose()

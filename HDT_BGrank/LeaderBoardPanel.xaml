@@ -10,6 +10,6 @@
     <Grid Background="Transparent">
         <TextBlock x:Name="LeaderText" Text="&#xA;123 12345&#xA;123 12345&#xA;123 12345&#xA;123 12345&#xA;123 12345&#xA;123 12345&#xA;123 12345" Foreground="#FFE8E3E3" Background="#FF272424" FontSize="20" Margin="0,0,532,62"/>
         <Button x:Name="DeleteButton" Content="X" Width="25" Height="25" Click="DeleteButton_Click" HorizontalAlignment="Left" VerticalAlignment="Top" FontSize="10"/>
-        <Button x:Name="HiddenButton" Content="–" Width="25" Height="25" Click="HiddenButton_Click" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="25,0,0,0"/>
+        <Button x:Name="HiddenButton" Content="–" Width="25" Height="25" Click="HiddenButton_Click" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="25,0,0,0" FontSize="12"/>
     </Grid>
 </UserControl>

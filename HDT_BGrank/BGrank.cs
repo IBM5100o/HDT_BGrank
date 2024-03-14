@@ -12,10 +12,12 @@ namespace HDT_BGrank
     public class BGrank
     {
         public bool done = false;
-        public List<string> oppNames = new List<string>();
         public Dictionary<string, string> oppDict = new Dictionary<string, string>();
-        Mirror mirror = null;
+
         Dictionary<string, string> leaderBoard = new Dictionary<string, string>();
+        List<string> oppNames = new List<string>();
+        
+        Mirror mirror = null;
         bool leaderBoardReady = false;
         bool namesReady = false;
         bool failToGetData = false;
@@ -31,53 +33,70 @@ namespace HDT_BGrank
             oppNames.Clear();
             oppDict.Clear();
             leaderBoard.Clear();
-            mirror.Clean();
         }
 
         public void OnGameStart()
         {
-            mirror = new Mirror { ImageName = "Hearthstone" };
-            if (Core.Game.IsBattlegroundsMatch && !leaderBoardReady && !failToGetData)
-            {
-                GetLeaderBoard();
-            }
+            GetLeaderBoard();
         }
 
         public void OnTurnStart(ActivePlayer player)
         {
+            GetLeaderBoard();
             playerReady = true;
         }
 
         public void OnUpdate() 
         {
-            if (failToGetData) 
-            { 
-                done = true;
-            }
-            else if (leaderBoardReady)
+            if (!Core.Game.IsRunning)
             {
-                if (!namesReady) { GetOppNames(); }
-                else
+                if (mirror != null)
                 {
-                    foreach (string name in oppNames)
-                    {
-                        if (oppDict.ContainsKey(name)) { continue; }
-                        if (leaderBoard.TryGetValue(name, out string value))
-                        {
-                            oppDict.Add(name, value);
-                        }
-                        else
-                        {
-                            oppDict.Add(name, "8000↓");
-                        }
-                    }
+                    mirror.Clean();
+                    mirror = null;
+                }
+            }
+            else if(mirror == null)
+            {
+                mirror = new Mirror { ImageName = "Hearthstone" };
+            }
+
+            if (Core.Game.IsInMenu)
+            {
+                Reset();
+            }
+            else if(!done && Core.Game.IsBattlegroundsMatch)
+            {
+                if (failToGetData)
+                {
                     done = true;
+                }
+                else if (leaderBoardReady)
+                {
+                    if (!namesReady) { GetOppNames(); }
+                    else
+                    {
+                        foreach (string name in oppNames)
+                        {
+                            if (oppDict.ContainsKey(name)) { continue; }
+                            if (leaderBoard.TryGetValue(name, out string value))
+                            {
+                                oppDict.Add(name, value);
+                            }
+                            else
+                            {
+                                oppDict.Add(name, "8000↓");
+                            }
+                        }
+                        done = true;
+                    }
                 }
             }
         }
 
         public async Task GetLeaderBoard()
         {
+            if (!Core.Game.IsBattlegroundsMatch || leaderBoardReady || failToGetData) { return; }
             string region = GetRegionStr();
             string url = $"https://www.d0nkey.top/leaderboard?leaderboardId=BG&region={region}&limit=50000";
             string[] lines;
