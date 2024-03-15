@@ -165,7 +165,7 @@ namespace HDT_BGrank
                         while ((line = reader.ReadLine()) != null)
                         {
                             string[] tmp = line.Split(' ');
-                            oppDict.Add(tmp[0], tmp[1]);
+                            leaderBoard.Add(tmp[0], tmp[1]);
                         }
                     }
                     leaderBoardReady = true;
