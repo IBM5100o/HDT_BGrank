@@ -4,6 +4,7 @@ using Hearthstone_Deck_Tracker.Enums;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 
@@ -12,15 +13,16 @@ namespace HDT_BGrank
     public class BGrank
     {
         public bool done = false;
+        public bool failToGetData = false;
         public Dictionary<string, string> oppDict = new Dictionary<string, string>();
 
         Dictionary<string, string> leaderBoard = new Dictionary<string, string>();
+        Dictionary<string, int> unsortDict = new Dictionary<string, int>();
         List<string> oppNames = new List<string>();
         
         Mirror mirror = null;
         bool leaderBoardReady = false;
         bool namesReady = false;
-        bool failToGetData = false;
         bool playerReady = false;
 
         public void Reset()
@@ -33,6 +35,7 @@ namespace HDT_BGrank
             oppNames.Clear();
             oppDict.Clear();
             leaderBoard.Clear();
+            unsortDict.Clear();
         }
 
         public void OnGameStart()
@@ -67,29 +70,33 @@ namespace HDT_BGrank
             }
             else if(!done && Core.Game.IsBattlegroundsMatch)
             {
-                if (failToGetData)
-                {
-                    done = true;
-                }
+                if (failToGetData) { done = true; }
+                else if (!namesReady) { GetOppNames(); }
                 else if (leaderBoardReady)
                 {
-                    if (!namesReady) { GetOppNames(); }
-                    else
+                    foreach (string name in oppNames)
                     {
-                        foreach (string name in oppNames)
+                        if (leaderBoard.TryGetValue(name, out string value))
                         {
-                            if (oppDict.ContainsKey(name)) { continue; }
-                            if (leaderBoard.TryGetValue(name, out string value))
-                            {
-                                oppDict.Add(name, value);
-                            }
-                            else
-                            {
-                                oppDict.Add(name, "8000↓");
-                            }
+                            unsortDict.Add(name, int.Parse(value));
                         }
-                        done = true;
+                        else
+                        {
+                            unsortDict.Add(name, 0);
+                        }
                     }
+                    foreach(var opp in unsortDict.OrderBy(x => x.Value))
+                    {
+                        if(opp.Value == 0)
+                        {
+                            oppDict.Add(opp.Key, "8000↓");
+                        }
+                        else
+                        {
+                            oppDict.Add(opp.Key, opp.Value.ToString());
+                        }
+                    }
+                    done = true;
                 }
             }
         }
@@ -102,7 +109,7 @@ namespace HDT_BGrank
             string[] lines;
             int num_tries = 0;
             string path = $"LeaderBoard_{region}.txt";
-            while (num_tries < 3 && !leaderBoardReady)
+            while (num_tries < 2 && !leaderBoardReady)
             {
                 try
                 {
@@ -152,7 +159,7 @@ namespace HDT_BGrank
                 }
                 catch (Exception)
                 {
-                    await Task.Delay(5000);
+                    await Task.Delay(10000);
                 }
             }
             if (!leaderBoardReady) 
@@ -205,10 +212,14 @@ namespace HDT_BGrank
                 var playerTile = playerTiles[i];
                 // Info not available until the player mouses over the tile in the leaderboard, and there is no other way to get it
                 string playerName = playerTile["m_mainCardActor"]?["m_playerNameText"]?["m_Text"];
-                if (playerName == null || playerName == String.Empty || playerName == myName) { continue; }
-                if (!oppNames.Contains(playerName)) { oppNames.Add(playerName); }
+                if (playerName == null || playerName == String.Empty) 
+                {
+                    oppNames.Clear();
+                    break;
+                }
+                if (!oppNames.Contains(playerName) && playerName != myName) { oppNames.Add(playerName); }
             }
-            if (oppNames.Count != 0 && oppNames.Count == numberOfPlayerTiles - 1) { namesReady = true; }
+            if (oppNames.Count != 0) { namesReady = true; }
         }
     }
 }

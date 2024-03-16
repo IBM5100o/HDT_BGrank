@@ -30,11 +30,15 @@ namespace HDT_BGrank
             {
                 int i = 0;
                 string allText = "\n";
-                foreach (var opp in rank.oppDict)
+                if (rank.failToGetData) { allText += "Fail to get data"; }
+                else
                 {
-                    allText += opp.Key + " " + opp.Value;
-                    i++;
-                    if (i < rank.oppDict.Count) { allText += "\n"; }
+                    foreach (var opp in rank.oppDict)
+                    {
+                        allText += opp.Key + " " + opp.Value;
+                        i++;
+                        if (i < rank.oppDict.Count) { allText += "\n"; }
+                    }
                 }
                 LeaderText.Text = allText;
                 finished = true;
