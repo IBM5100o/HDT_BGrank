@@ -1,24 +1,24 @@
-﻿using Hearthstone_Deck_Tracker.Utility.Extensions;
-using System;
+﻿using System;
 using System.Windows;
 using System.Windows.Controls;
 using Hearthstone_Deck_Tracker.API;
+using Hearthstone_Deck_Tracker.Utility.Extensions;
 
 namespace HDT_BGrank
 {
-    /// <summary>
-    /// UserControl1.xaml 的互動邏輯
-    /// </summary>
     public partial class LeaderBoardPanel : UserControl, IDisposable
     {
         bool finished = false;
+
         public LeaderBoardPanel()
         {
             InitializeComponent();
             OverlayExtensions.SetIsOverlayHitTestVisible(DeleteButton, true);
             OverlayExtensions.SetIsOverlayHitTestVisible(HiddenButton, true);
+            OverlayExtensions.SetIsOverlayHitTestVisible(PositionButton, true);
             Visibility = Visibility.Hidden;
         }
+
         public void OnUpdate(BGrank rank)
         {
             if (Core.Game.IsInMenu)
@@ -45,8 +45,10 @@ namespace HDT_BGrank
                 Visibility = Visibility.Visible;
             }
         }
-        public void Dispose()
+
+        private void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
+            Visibility = Visibility.Hidden;
         }
 
         private void HiddenButton_Click(object sender, RoutedEventArgs e)
@@ -61,10 +63,20 @@ namespace HDT_BGrank
             }
         }
 
-        private void DeleteButton_Click(object sender, RoutedEventArgs e)
+        private void PositionButton_Click(object sender, RoutedEventArgs e)
         {
-            Visibility = Visibility.Hidden;
+            if (LeaderGrid.VerticalAlignment == VerticalAlignment.Top)
+            {
+                LeaderGrid.VerticalAlignment = VerticalAlignment.Center;
+            }
+            else
+            {
+                LeaderGrid.VerticalAlignment = VerticalAlignment.Top;
+            }
         }
 
+        public void Dispose()
+        {
+        }
     }
 }
