@@ -18,6 +18,10 @@ players under 8000 MMR will be shown as 8000↓.
 
 If there are players with same name, the highest MMR will be chosen.  
 
+**Important: Sometimes players who over 8000 can't be found in the leaderboard,**  
+
+**so 8000↓ is not 100% accurate.**  
+
 # Installation  
 
 1.Download the **HDT_BGrank.zip** from [here](https://github.com/IBM5100o/HDT_BGrank/releases).  
