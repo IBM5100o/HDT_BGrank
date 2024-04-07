@@ -1,15 +1,15 @@
 ﻿using System;
+using System.Windows.Controls;
 using Hearthstone_Deck_Tracker.API;
 using Hearthstone_Deck_Tracker.Plugins;
-using System.Windows.Controls;
 
 namespace HDT_BGrank
 {
     public class BGrankPlugin : IPlugin
     {
-        internal BGrank rank;
         public MenuItem MenuItem { get; private set; }
-        private LeaderBoardPanel leaderBoardPanel;
+        private BGrank rank = null;
+        private LeaderBoardPanel leaderBoardPanel = null;
 
         public string Author
         {
@@ -47,6 +47,8 @@ namespace HDT_BGrank
         public void OnUnload()
         {
             MenuItem.IsChecked = false;
+            rank.Reset();
+            rank = null;
         }
 
         public void OnUpdate()
@@ -85,7 +87,7 @@ namespace HDT_BGrank
 
         public Version Version
         {
-            get { return new Version(1, 0, 4); }
+            get { return new Version(1, 0, 5); }
         }
 
     }

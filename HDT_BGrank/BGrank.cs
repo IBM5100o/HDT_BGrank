@@ -1,12 +1,12 @@
-﻿using HearthMirror;
-using Hearthstone_Deck_Tracker;
-using Hearthstone_Deck_Tracker.Enums;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using System.Collections.Generic;
+using HearthMirror;
+using Hearthstone_Deck_Tracker;
+using Hearthstone_Deck_Tracker.Enums;
 
 namespace HDT_BGrank
 {
@@ -16,26 +16,26 @@ namespace HDT_BGrank
         public bool failToGetData = false;
         public Dictionary<string, string> oppDict = new Dictionary<string, string>();
 
-        Dictionary<string, string> leaderBoard = new Dictionary<string, string>();
-        Dictionary<string, int> unsortDict = new Dictionary<string, int>();
-        List<string> oppNames = new List<string>();
-        
-        Mirror mirror = null;
-        bool leaderBoardReady = false;
-        bool namesReady = false;
-        bool playerReady = false;
+        private bool namesReady = false;
+        private bool playerReady = false;
+        private bool leaderBoardReady = false;
+
+        private Mirror mirror = null;
+        private List<string> oppNames = new List<string>();
+        private Dictionary<string, int> unsortDict = new Dictionary<string, int>();
+        private Dictionary<string, string> leaderBoard = new Dictionary<string, string>();
 
         public void Reset()
         {
             done = false;
-            leaderBoardReady = false;
-            namesReady = false;
             failToGetData = false;
+            namesReady = false;
             playerReady = false;
-            oppNames.Clear();
+            leaderBoardReady = false;
             oppDict.Clear();
-            leaderBoard.Clear();
+            oppNames.Clear();
             unsortDict.Clear();
+            leaderBoard.Clear();
         }
 
         public void OnGameStart()
@@ -59,7 +59,7 @@ namespace HDT_BGrank
                     mirror = null;
                 }
             }
-            else if(mirror == null)
+            else if (mirror == null)
             {
                 mirror = new Mirror { ImageName = "Hearthstone" };
             }
@@ -68,7 +68,7 @@ namespace HDT_BGrank
             {
                 Reset();
             }
-            else if(!done && Core.Game.IsBattlegroundsMatch)
+            else if (!done && Core.Game.IsBattlegroundsMatch)
             {
                 if (failToGetData) { done = true; }
                 else if (!namesReady) { GetOppNames(); }
@@ -85,9 +85,9 @@ namespace HDT_BGrank
                             unsortDict.Add(name, 0);
                         }
                     }
-                    foreach(var opp in unsortDict.OrderBy(x => x.Value))
+                    foreach (var opp in unsortDict.OrderBy(x => x.Value))
                     {
-                        if(opp.Value == 0)
+                        if (opp.Value == 0)
                         {
                             oppDict.Add(opp.Key, "8000↓");
                         }
@@ -97,57 +97,67 @@ namespace HDT_BGrank
                         }
                     }
                     done = true;
+                    oppNames.Clear();
+                    unsortDict.Clear();
+                    leaderBoard.Clear();
                 }
             }
         }
 
-        public async Task GetLeaderBoard()
+        private async Task GetLeaderBoard()
         {
             if (!Core.Game.IsBattlegroundsMatch || leaderBoardReady || failToGetData) { return; }
+
+            // Get the leaderboard information from: https://www.d0nkey.top
             string region = GetRegionStr();
-            string url = $"https://www.d0nkey.top/leaderboard?leaderboardId=BG&region={region}&limit=50000";
-            string[] lines;
-            int num_tries = 0;
             string path = $"LeaderBoard_{region}.txt";
-            while (num_tries < 2 && !leaderBoardReady)
+            string url = $"https://www.d0nkey.top/leaderboard?leaderboardId=BG&region={region}&limit=100000";
+            int num_tries = 0;
+            int max_tries = 2;
+
+            while (num_tries < max_tries && !leaderBoardReady)
             {
+                num_tries++;
                 try
                 {
-                    num_tries++;
                     using (HttpClient client = new HttpClient())
                     {
                         client.DefaultRequestHeaders.Add("User-Agent", "User-Agent-Here");
                         string response = await client.GetStringAsync(url);
-                        lines = response.Split('\n');
+                        if (string.IsNullOrEmpty(response)) 
+                        {
+                            if (num_tries < max_tries) { await Task.Delay(10000); }
+                            continue; 
+                        }
 
+                        string[] lines = response.Split('\n');
                         string line, name, rating;
                         int idx, idx2, i = 0;
-                        while (true)
+                        while (i < lines.Length)
                         {
-                            if (i == lines.Length) { break; }
                             line = lines[i];
                             i++;
-
                             idx = line.IndexOf("player-profile/");
                             if (idx > 0)
                             {
                                 idx += 15;
                                 idx2 = line.IndexOf("\"", idx);
-                                name = (line.Substring(idx, idx2 - idx));
-                                if (name == string.Empty) { continue; }
+                                name = line.Substring(idx, idx2 - idx);
+                                if (string.IsNullOrEmpty(name) || leaderBoard.ContainsKey(name)) { continue; }
                                 for (int j = 0; j < 2;)
                                 {
-                                    i++;
                                     line = lines[i];
+                                    i++;
                                     if (line.Contains("</td>")) j++;
                                 }
                                 idx = line.IndexOf(">");
                                 idx2 = line.LastIndexOf("<");
                                 rating = line.Substring(idx + 1, idx2 - idx - 1);
-                                if (!leaderBoard.ContainsKey(name)) { leaderBoard.Add(name, rating); }
+                                if (!string.IsNullOrEmpty(rating)) { leaderBoard.Add(name, rating); }
                             }
                         }
                     }
+
                     leaderBoardReady = true;
                     using (StreamWriter writer = new StreamWriter(path))
                     {
@@ -155,27 +165,35 @@ namespace HDT_BGrank
                         {
                             writer.WriteLine(player.Key + " " + player.Value);
                         }
-                    } 
+                    }
                 }
                 catch (Exception)
                 {
-                    await Task.Delay(10000);
+                    if (num_tries < max_tries) { await Task.Delay(10000); }
                 }
             }
+
             if (!leaderBoardReady) 
             { 
-                if(File.Exists(path))
+                if (File.Exists(path))
                 {
-                    using (StreamReader reader = new StreamReader(path))
+                    try
                     {
-                        string line;
-                        while ((line = reader.ReadLine()) != null)
+                        using (StreamReader reader = new StreamReader(path))
                         {
-                            string[] tmp = line.Split(' ');
-                            leaderBoard.Add(tmp[0], tmp[1]);
+                            string line;
+                            while ((line = reader.ReadLine()) != null)
+                            {
+                                string[] tmp = line.Split(' ');
+                                leaderBoard.Add(tmp[0], tmp[1]);
+                            }
                         }
+                        leaderBoardReady = true;
                     }
-                    leaderBoardReady = true;
+                    catch (Exception)
+                    {
+                        failToGetData = true;
+                    }
                 }
                 else
                 {
@@ -184,7 +202,7 @@ namespace HDT_BGrank
             }
         }
 
-        public string GetRegionStr()
+        private string GetRegionStr()
         {
             switch (Core.Game.CurrentRegion)
             {
@@ -195,13 +213,13 @@ namespace HDT_BGrank
                 default:
                     return "AP";
             }
-
         }
 
-        public void GetOppNames()
+        private void GetOppNames()
         {
             if (!playerReady) { return; }
 
+            // The code below is from: https://github.com/Zero-to-Heroes/unity-spy-.net4.5/tree/master
             string myName = Reflection.Client.GetMatchInfo().LocalPlayer.Name;
             var leaderboardMgr = mirror.Root?["PlayerLeaderboardManager"]?["s_instance"];
             var numberOfPlayerTiles = leaderboardMgr?["m_playerTiles"]?["_size"];
@@ -212,12 +230,12 @@ namespace HDT_BGrank
                 var playerTile = playerTiles[i];
                 // Info not available until the player mouses over the tile in the leaderboard, and there is no other way to get it
                 string playerName = playerTile["m_mainCardActor"]?["m_playerNameText"]?["m_Text"];
-                if (playerName == null || playerName == String.Empty) 
+                if (string.IsNullOrEmpty(playerName)) 
                 {
                     oppNames.Clear();
                     break;
                 }
-                if (!oppNames.Contains(playerName) && playerName != myName) { oppNames.Add(playerName); }
+                if (playerName != myName && !oppNames.Contains(playerName)) { oppNames.Add(playerName); }
             }
             if (oppNames.Count != 0) { namesReady = true; }
         }

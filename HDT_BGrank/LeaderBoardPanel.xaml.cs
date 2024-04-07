@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Controls;
 using Hearthstone_Deck_Tracker.API;
 using Hearthstone_Deck_Tracker.Utility.Extensions;
@@ -8,14 +9,17 @@ namespace HDT_BGrank
 {
     public partial class LeaderBoardPanel : UserControl, IDisposable
     {
-        bool finished = false;
+        private bool finished = false;
+        private bool isDragging = false;
+        private Point originalGridPosition;
+        private Point originalMousePosition;
 
         public LeaderBoardPanel()
         {
             InitializeComponent();
+            OverlayExtensions.SetIsOverlayHitTestVisible(LeaderText, true);
             OverlayExtensions.SetIsOverlayHitTestVisible(DeleteButton, true);
             OverlayExtensions.SetIsOverlayHitTestVisible(HiddenButton, true);
-            OverlayExtensions.SetIsOverlayHitTestVisible(PositionButton, true);
             Visibility = Visibility.Hidden;
         }
 
@@ -63,15 +67,39 @@ namespace HDT_BGrank
             }
         }
 
-        private void PositionButton_Click(object sender, RoutedEventArgs e)
+        private void LeaderText_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            if (LeaderGrid.VerticalAlignment == VerticalAlignment.Top)
+            if (e.ChangedButton == MouseButton.Left)
             {
-                LeaderGrid.VerticalAlignment = VerticalAlignment.Center;
+                isDragging = true;
+                originalMousePosition = e.GetPosition(this);
+                originalGridPosition = new Point(LeaderGrid.Margin.Left, LeaderGrid.Margin.Top);
             }
-            else
+        }
+
+        private void LeaderText_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ChangedButton == MouseButton.Left)
             {
-                LeaderGrid.VerticalAlignment = VerticalAlignment.Top;
+                isDragging = false;
+            }
+        }
+
+        private void LeaderText_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (isDragging)
+            {
+                Point currentPosition = e.GetPosition(this);
+                double offsetX = currentPosition.X - originalMousePosition.X;
+                double offsetY = currentPosition.Y - originalMousePosition.Y;
+
+                double newLeft = originalGridPosition.X + offsetX;
+                double newTop = originalGridPosition.Y + offsetY;
+                if (newLeft < 0) { newLeft = 0; }
+                if (newTop < 0) { newTop = 0; }
+
+                Thickness newMargin = new Thickness(newLeft, newTop, LeaderGrid.Margin.Right, LeaderGrid.Margin.Bottom);
+                LeaderGrid.Margin = newMargin;
             }
         }
 
