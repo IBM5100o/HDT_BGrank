@@ -8,17 +8,17 @@ Here is it looks like:
 
 ![image](https://hackmd.io/_uploads/BJBafBg06.jpg)  
 
-After a match starts, slip your mouse cursor on every opponents' portrait at left,  
+After a match starts, slip your mouse cursor on everyone's portrait at left,  
 
 and then the MMR information will show up.  
 
-Since the leaderboard only records the players over 8000 MMR,  
+Since the leaderboard only records the players with 8000+ MMR,  
 
-players under 8000 MMR will be shown as 8000↓.  
+the players with 8000- MMR will be shown as 8000↓.  
 
-If there are players with same name, the highest MMR will be chosen.  
+If there are players with a same name, the highest MMR will be picked.  
 
-**Important: Sometimes players who over 8000 can't be found in the leaderboard,**  
+**Notice: Sometimes players with 8000+ can't be found in the leaderboard,**  
 
 **so 8000↓ is not 100% accurate.**  
 
