@@ -10,15 +10,15 @@ Here is it looks like:
 
 After a match starts, slip your mouse cursor on everyone's portrait at left,  
 
-and then the MMR information will show up.  
+and then the MMR information will show up. (you can move the panel by dragging it)  
 
-Since the leaderboard only records the players with 8000+ MMR,  
+Since the leaderboard only records the 8000+ MMR players,  
 
-the players with 8000- MMR will be shown as 8000↓.  
+the 8000- MMR players will be shown as 8000↓.  
 
 If there are players with a same name, the highest MMR will be picked.  
 
-**Notice: Sometimes players with 8000+ can't be found in the leaderboard,**  
+**Notice: Sometimes players with 8000+ MMR can't be found in the leaderboard,**  
 
 **so 8000↓ is not 100% accurate.**  
 
