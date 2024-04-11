@@ -34,7 +34,7 @@ namespace HDT_BGrank
             {
                 int i = 0;
                 string allText = "\n";
-                if (rank.failToGetData) { allText += "Fail to get data"; }
+                if (rank.failToGetData) { allText += "No data now"; }
                 else
                 {
                     foreach (var opp in rank.oppDict)
@@ -47,6 +47,7 @@ namespace HDT_BGrank
                 LeaderText.Text = allText;
                 finished = true;
                 Visibility = Visibility.Visible;
+                rank.ClearMemory();
             }
         }
 

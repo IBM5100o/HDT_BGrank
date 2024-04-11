@@ -32,6 +32,11 @@ namespace HDT_BGrank
             namesReady = false;
             playerReady = false;
             leaderBoardReady = false;
+            ClearMemory();
+        }
+
+        public void ClearMemory()
+        {
             oppDict.Clear();
             oppNames.Clear();
             unsortDict.Clear();
@@ -97,9 +102,6 @@ namespace HDT_BGrank
                         }
                     }
                     done = true;
-                    oppNames.Clear();
-                    unsortDict.Clear();
-                    leaderBoard.Clear();
                 }
             }
         }
@@ -157,13 +159,15 @@ namespace HDT_BGrank
                             }
                         }
                     }
-
-                    leaderBoardReady = true;
-                    using (StreamWriter writer = new StreamWriter(path))
+                    if (leaderBoard.Count != 0) 
                     {
-                        foreach (var player in leaderBoard)
+                        leaderBoardReady = true;
+                        using (StreamWriter writer = new StreamWriter(path))
                         {
-                            writer.WriteLine(player.Key + " " + player.Value);
+                            foreach (var player in leaderBoard)
+                            {
+                                writer.WriteLine(player.Key + " " + player.Value);
+                            }
                         }
                     }
                 }
@@ -188,7 +192,8 @@ namespace HDT_BGrank
                                 leaderBoard.Add(tmp[0], tmp[1]);
                             }
                         }
-                        leaderBoardReady = true;
+                        if (leaderBoard.Count != 0) { leaderBoardReady = true; }
+                        else { failToGetData = true; }
                     }
                     catch (Exception)
                     {
@@ -239,5 +244,6 @@ namespace HDT_BGrank
             }
             if (oppNames.Count != 0) { namesReady = true; }
         }
+
     }
 }
