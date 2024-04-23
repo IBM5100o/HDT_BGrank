@@ -110,12 +110,22 @@ namespace HDT_BGrank
         {
             if (!Core.Game.IsBattlegroundsMatch || leaderBoardReady || failToGetData) { return; }
 
-            // Get the leaderboard information from: https://www.d0nkey.top
+            // Get the leaderboard information from: https://bgrank.fly.dev/
             string region = GetRegionStr();
-            string path = $"LeaderBoard_{region}.txt";
-            string url = $"https://www.d0nkey.top/leaderboard?leaderboardId=BG&region={region}&limit=100000";
+            string path, url;
             int num_tries = 0;
             int max_tries = 2;
+
+            if (Core.Game.IsBattlegroundsSoloMatch)
+            {
+                path = $"LeaderBoard_{region}.txt";
+                url = $"https://bgrank.fly.dev/{region}/";
+            }
+            else
+            {
+                path = $"LeaderBoard_{region}_duo.txt";
+                url = $"https://bgrank.fly.dev/{region}_duo/";
+            }
 
             while (num_tries < max_tries && !leaderBoardReady)
             {
@@ -133,29 +143,21 @@ namespace HDT_BGrank
                         }
 
                         string[] lines = response.Split('\n');
-                        string line, name, rating;
-                        int idx, idx2, i = 0;
-                        while (i < lines.Length)
+
+                        for (int i = 0; i < lines.Length; i++)
                         {
-                            line = lines[i];
-                            i++;
-                            idx = line.IndexOf("player-profile/");
-                            if (idx > 0)
+                            string line = lines[i];
+                            if (i > 0)
                             {
-                                idx += 15;
-                                idx2 = line.IndexOf("\"", idx);
-                                name = line.Substring(idx, idx2 - idx);
-                                if (string.IsNullOrEmpty(name) || leaderBoard.ContainsKey(name)) { continue; }
-                                for (int j = 0; j < 2;)
-                                {
-                                    line = lines[i];
-                                    i++;
-                                    if (line.Contains("</td>")) j++;
-                                }
-                                idx = line.IndexOf(">");
-                                idx2 = line.LastIndexOf("<");
-                                rating = line.Substring(idx + 1, idx2 - idx - 1);
-                                if (!string.IsNullOrEmpty(rating)) { leaderBoard.Add(name, rating); }
+                                line = line.Substring(6);
+                            }
+                            string[] tmp = line.Split(' ');
+                            if (tmp.Length == 2)
+                            {
+                                string name = tmp[0];
+                                string rating = tmp[1];
+                                if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(rating)) { continue; }
+                                if (!leaderBoard.ContainsKey(name)) { leaderBoard.Add(name, rating); }
                             }
                         }
                     }
@@ -225,25 +227,52 @@ namespace HDT_BGrank
             if (!playerReady) { return; }
 
             // The code below is from: https://github.com/Zero-to-Heroes/unity-spy-.net4.5/tree/master
-            string myName = Reflection.Client.GetMatchInfo().LocalPlayer.Name;
-            var leaderboardMgr = mirror.Root?["PlayerLeaderboardManager"]?["s_instance"];
-            var numberOfPlayerTiles = leaderboardMgr?["m_playerTiles"]?["_size"];
-            var playerTiles = leaderboardMgr?["m_playerTiles"]?["_items"];
-
-            for (int i = 0; i < numberOfPlayerTiles; i++)
+            try
             {
-                var playerTile = playerTiles[i];
-                // Info not available until the player mouses over the tile in the leaderboard, and there is no other way to get it
-                string playerName = playerTile["m_mainCardActor"]?["m_playerNameText"]?["m_Text"];
-                if (string.IsNullOrEmpty(playerName)) 
+                string myName = Reflection.Client.GetMatchInfo().LocalPlayer.Name;
+                var leaderboardMgr = mirror.Root?["PlayerLeaderboardManager"]?["s_instance"];
+                dynamic[] playerTiles = GetPlayerTiles(leaderboardMgr);
+                var numberOfPlayerTiles = playerTiles?.Length ?? 0;
+
+                for (int i = 0; i < numberOfPlayerTiles; i++)
                 {
-                    oppNames.Clear();
-                    break;
+                    var playerTile = playerTiles[i];
+                    // Info not available until the player mouses over the tile in the leaderboard, and there is no other way to get it
+                    string playerName = playerTile["m_overlay"]?["m_heroActor"]?["m_playerNameText"]?["m_Text"];
+                    if (string.IsNullOrEmpty(playerName))
+                    {
+                        oppNames.Clear();
+                        break;
+                    }
+                    if (playerName != myName && !oppNames.Contains(playerName)) { oppNames.Add(playerName); }
                 }
-                if (playerName != myName && !oppNames.Contains(playerName)) { oppNames.Add(playerName); }
+            }
+            catch (Exception) 
+            {
+                oppNames.Clear();
             }
             if (oppNames.Count != 0) { namesReady = true; }
         }
 
+        // The code below is from: https://github.com/Zero-to-Heroes/unity-spy-.net4.5/tree/master
+        private static dynamic[] GetPlayerTiles(dynamic leaderboardMgr)
+        {
+            var result = new List<dynamic>();
+            var teams = leaderboardMgr["m_teams"]?["_items"];
+            foreach (var team in teams)
+            {
+                if (team == null)
+                {
+                    continue;
+                }
+
+                var tiles = team["m_playerLeaderboardCards"]?["_items"];
+                foreach (var tile in tiles)
+                {
+                    result.Add(tile);
+                }
+            }
+            return result.ToArray();
+        }
     }
 }
