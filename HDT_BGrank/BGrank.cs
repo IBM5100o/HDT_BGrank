@@ -114,7 +114,7 @@ namespace HDT_BGrank
             string region = GetRegionStr();
             string path, url;
             int num_tries = 0;
-            int max_tries = 2;
+            int max_tries = 3;
 
             if (Core.Game.IsBattlegroundsSoloMatch)
             {
@@ -144,7 +144,7 @@ namespace HDT_BGrank
 
                         string[] lines = response.Split('\n');
 
-                        for (int i = 0; i < lines.Length; i++)
+                        for (int i = 0; i < lines.Length-1; i++)
                         {
                             string line = lines[i];
                             if (i > 0)
