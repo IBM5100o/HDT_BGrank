@@ -19,13 +19,14 @@ namespace HDT_BGrank
         private bool namesReady = false;
         private bool playerReady = false;
         private bool leaderBoardReady = false;
+        private bool isReset = true;
 
         private Mirror mirror = null;
         private List<string> oppNames = new List<string>();
         private Dictionary<string, int> unsortDict = new Dictionary<string, int>();
         private Dictionary<string, string> leaderBoard = new Dictionary<string, string>();
 
-        public void Reset()
+        private void Reset()
         {
             done = false;
             failToGetData = false;
@@ -71,10 +72,15 @@ namespace HDT_BGrank
 
             if (Core.Game.IsInMenu)
             {
-                Reset();
+                if (!isReset)
+                {
+                    Reset();
+                    isReset = true;
+                }
             }
             else if (!done && Core.Game.IsBattlegroundsMatch)
             {
+                isReset = false;
                 if (failToGetData) { done = true; }
                 else if (!namesReady) { GetOppNames(); }
                 else if (leaderBoardReady)
@@ -226,7 +232,7 @@ namespace HDT_BGrank
         {
             if (!playerReady) { return; }
 
-            // The code below is from: https://github.com/Zero-to-Heroes/unity-spy-.net4.5/tree/master
+            // The code below is from: https://github.com/Zero-to-Heroes/unity-spy-.net4.5
             try
             {
                 string myName = Reflection.Client.GetMatchInfo().LocalPlayer.Name;
@@ -254,7 +260,7 @@ namespace HDT_BGrank
             if (oppNames.Count != 0) { namesReady = true; }
         }
 
-        // The code below is from: https://github.com/Zero-to-Heroes/unity-spy-.net4.5/tree/master
+        // The code below is from: https://github.com/Zero-to-Heroes/unity-spy-.net4.5
         private static dynamic[] GetPlayerTiles(dynamic leaderboardMgr)
         {
             var result = new List<dynamic>();
