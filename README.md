@@ -36,7 +36,7 @@ If there are players with a same name, the highest MMR will be picked.
 
 # References  
 
-https://github.com/Zero-to-Heroes/unity-spy-.net4.5/tree/master  
+https://github.com/Zero-to-Heroes/unity-spy-.net4.5  
 ↑ Thanks a lot. It is really a great job!  
 
 https://github.com/IBM5100o/BGrank_bot  
