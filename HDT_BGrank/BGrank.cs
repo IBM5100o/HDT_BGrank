@@ -38,10 +38,10 @@ namespace HDT_BGrank
 
         public void ClearMemory()
         {
-            oppDict.Clear();
-            oppNames.Clear();
-            unsortDict.Clear();
-            leaderBoard.Clear();
+            oppDict = new Dictionary<string, string>();
+            oppNames = new List<string>();
+            unsortDict = new Dictionary<string, int>();
+            leaderBoard = new Dictionary<string, string>();
         }
 
         public void OnGameStart()
@@ -245,19 +245,12 @@ namespace HDT_BGrank
                     var playerTile = playerTiles[i];
                     // Info not available until the player mouses over the tile in the leaderboard, and there is no other way to get it
                     string playerName = playerTile["m_overlay"]?["m_heroActor"]?["m_playerNameText"]?["m_Text"];
-                    if (string.IsNullOrEmpty(playerName))
-                    {
-                        oppNames.Clear();
-                        break;
-                    }
+                    if (string.IsNullOrEmpty(playerName)) { continue; }
                     if (playerName != myName && !oppNames.Contains(playerName)) { oppNames.Add(playerName); }
                 }
+                if (oppNames.Count == numberOfPlayerTiles-1) { namesReady = true; }
             }
-            catch (Exception) 
-            {
-                oppNames.Clear();
-            }
-            if (oppNames.Count != 0) { namesReady = true; }
+            catch (Exception) { }
         }
 
         // The code below is from: https://github.com/Zero-to-Heroes/unity-spy-.net4.5
