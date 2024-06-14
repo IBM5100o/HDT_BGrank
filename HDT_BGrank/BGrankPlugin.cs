@@ -47,7 +47,6 @@ namespace HDT_BGrank
         public void OnUnload()
         {
             MenuItem.IsChecked = false;
-            rank.ClearMemory();
             rank = null;
         }
 
@@ -87,7 +86,7 @@ namespace HDT_BGrank
 
         public Version Version
         {
-            get { return new Version(1, 1, 0); }
+            get { return new Version(1, 1, 1); }
         }
 
     }

@@ -14,34 +14,35 @@ namespace HDT_BGrank
     {
         public bool done = false;
         public bool failToGetData = false;
-        public Dictionary<string, string> oppDict = new Dictionary<string, string>();
+        public Dictionary<string, string> oppDict = null;
 
+        private bool isReset = true;
         private bool namesReady = false;
         private bool playerReady = false;
         private bool leaderBoardReady = false;
-        private bool isReset = true;
 
         private Mirror mirror = null;
-        private List<string> oppNames = new List<string>();
-        private Dictionary<string, int> unsortDict = new Dictionary<string, int>();
-        private Dictionary<string, string> leaderBoard = new Dictionary<string, string>();
+        private List<string> oppNames = null;
+        private Dictionary<string, int> unsortDict = null;
+        private Dictionary<string, string> leaderBoard = null;
 
         private void Reset()
         {
             done = false;
-            failToGetData = false;
             namesReady = false;
             playerReady = false;
+            failToGetData = false;
             leaderBoardReady = false;
             ClearMemory();
         }
 
         public void ClearMemory()
         {
-            oppDict = new Dictionary<string, string>();
-            oppNames = new List<string>();
-            unsortDict = new Dictionary<string, int>();
-            leaderBoard = new Dictionary<string, string>();
+            mirror = null;
+            oppDict = null;
+            oppNames = null;
+            unsortDict = null;
+            leaderBoard = null;
         }
 
         public void OnGameStart()
@@ -57,19 +58,6 @@ namespace HDT_BGrank
 
         public void OnUpdate() 
         {
-            if (!Core.Game.IsRunning)
-            {
-                if (mirror != null)
-                {
-                    mirror.Clean();
-                    mirror = null;
-                }
-            }
-            else if (mirror == null)
-            {
-                mirror = new Mirror { ImageName = "Hearthstone" };
-            }
-
             if (Core.Game.IsInMenu)
             {
                 if (!isReset)
@@ -80,11 +68,17 @@ namespace HDT_BGrank
             }
             else if (!done && Core.Game.IsBattlegroundsMatch)
             {
-                isReset = false;
+                if (isReset)
+                {
+                    mirror = new Mirror { ImageName = "Hearthstone" };
+                    isReset = false;
+                }
                 if (failToGetData) { done = true; }
                 else if (!namesReady) { GetOppNames(); }
                 else if (leaderBoardReady)
                 {
+                    oppDict = new Dictionary<string, string>();
+                    unsortDict = new Dictionary<string, int>();
                     foreach (string name in oppNames)
                     {
                         if (leaderBoard.TryGetValue(name, out string value))
@@ -117,6 +111,7 @@ namespace HDT_BGrank
             if (!Core.Game.IsBattlegroundsMatch || leaderBoardReady || failToGetData) { return; }
 
             // Get the leaderboard information from: https://bgrank.fly.dev/
+            leaderBoard = new Dictionary<string, string>();
             string region = GetRegionStr();
             string path, url;
             int num_tries = 0;
@@ -239,16 +234,27 @@ namespace HDT_BGrank
                 var leaderboardMgr = mirror.Root?["PlayerLeaderboardManager"]?["s_instance"];
                 dynamic[] playerTiles = GetPlayerTiles(leaderboardMgr);
                 var numberOfPlayerTiles = playerTiles?.Length ?? 0;
+                if (numberOfPlayerTiles == 0) { return; }
+                bool allPass = true;
+                List<string> tmpNames = new List<string>();
 
                 for (int i = 0; i < numberOfPlayerTiles; i++)
                 {
                     var playerTile = playerTiles[i];
                     // Info not available until the player mouses over the tile in the leaderboard, and there is no other way to get it
                     string playerName = playerTile["m_overlay"]?["m_heroActor"]?["m_playerNameText"]?["m_Text"];
-                    if (string.IsNullOrEmpty(playerName)) { continue; }
-                    if (playerName != myName && !oppNames.Contains(playerName)) { oppNames.Add(playerName); }
+                    if (string.IsNullOrEmpty(playerName)) 
+                    {
+                        allPass = false;
+                        break;
+                    }
+                    if (playerName != myName && !tmpNames.Contains(playerName)) { tmpNames.Add(playerName); }
                 }
-                if (oppNames.Count == numberOfPlayerTiles-1) { namesReady = true; }
+                if (allPass)
+                {
+                    oppNames = new List<string>(tmpNames);
+                    namesReady = true;
+                }
             }
             catch (Exception) { }
         }
