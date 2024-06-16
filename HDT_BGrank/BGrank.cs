@@ -252,6 +252,14 @@ namespace HDT_BGrank
                 }
                 if (allPass)
                 {
+                    if (BattleTagModOn(tmpNames))
+                    {
+                        for (int i = 0; i < tmpNames.Count; i++)
+                        {
+                            int index = tmpNames[i].LastIndexOf('#');
+                            tmpNames[i] = tmpNames[i].Substring(0, index);
+                        }
+                    }
                     oppNames = new List<string>(tmpNames);
                     namesReady = true;
                 }
@@ -278,6 +286,18 @@ namespace HDT_BGrank
                 }
             }
             return result.ToArray();
+        }
+
+        private bool BattleTagModOn(List<string> nameList)
+        {
+            foreach (string name in nameList)
+            {
+                if (!name.Contains('#'))
+                {
+                    return false;
+                }
+            }
+            return true;
         }
     }
 }
