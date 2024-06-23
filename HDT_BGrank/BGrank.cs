@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using HearthMirror;
 using Hearthstone_Deck_Tracker;
 using Hearthstone_Deck_Tracker.Enums;
+using Hearthstone_Deck_Tracker.Utility.Logging;
 
 namespace HDT_BGrank
 {
@@ -174,8 +175,9 @@ namespace HDT_BGrank
                         }
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
+                    Log.Error(ex);
                     if (num_tries < max_tries) { await Task.Delay(10000); }
                 }
             }
@@ -198,8 +200,9 @@ namespace HDT_BGrank
                         if (leaderBoard.Count != 0) { leaderBoardReady = true; }
                         else { failToGetData = true; }
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
+                        Log.Error(ex);
                         failToGetData = true;
                     }
                 }
@@ -265,7 +268,10 @@ namespace HDT_BGrank
                     namesReady = true;
                 }
             }
-            catch (Exception) { }
+            catch (Exception ex) 
+            {
+                Log.Error(ex);
+            }
         }
 
         // The code below is from: https://github.com/Zero-to-Heroes/unity-spy-.net4.5

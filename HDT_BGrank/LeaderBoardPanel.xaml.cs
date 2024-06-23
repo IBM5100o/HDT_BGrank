@@ -25,8 +25,6 @@ namespace HDT_BGrank
 
         public void OnUpdate(BGrank rank)
         {
-            GridTransform.ScaleX = Core.OverlayWindow.Width / 1920.0;
-            GridTransform.ScaleY = Core.OverlayWindow.Height / 1080.0;
             if (Core.Game.IsInMenu)
             {
                 Visibility = Visibility.Hidden;
@@ -36,6 +34,8 @@ namespace HDT_BGrank
             {
                 int i = 0;
                 string allText = "\n";
+                GridTransform.ScaleX = Core.OverlayWindow.Width / 1920.0;
+                GridTransform.ScaleY = Core.OverlayWindow.Height / 1080.0;
                 if (rank.failToGetData) { allText += "No data now"; }
                 else
                 {
