@@ -34,8 +34,10 @@ namespace HDT_BGrank
             {
                 int i = 0;
                 string allText = "\n";
-                GridTransform.ScaleX = Core.OverlayWindow.Width / 1920.0;
-                GridTransform.ScaleY = Core.OverlayWindow.Height / 1080.0;
+                double ratio = Core.OverlayWindow.Width / 1920.0;
+                if (ratio < 0.5) { ratio = 0.5; }
+                GridTransform.ScaleX = ratio;
+                GridTransform.ScaleY = ratio;
                 if (rank.failToGetData) { allText += "No data now"; }
                 else
                 {
