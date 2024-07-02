@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Collections.Generic;
@@ -24,8 +25,21 @@ namespace HDT_BGrank
 
         private Mirror mirror = null;
         private List<string> oppNames = null;
-        private Dictionary<string, int> unsortDict = null;
         private Dictionary<string, string> leaderBoard = null;
+        private readonly HttpClient client;
+
+        public BGrank()
+        {
+            var handler = new HttpClientHandler
+            {
+                UseCookies = true,
+                CookieContainer = new CookieContainer(),
+                AllowAutoRedirect = true,
+                ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
+            };
+            client = new HttpClient(handler);
+            client.DefaultRequestHeaders.Add("User-Agent", "User-Agent-Here");
+        }
 
         private void Reset()
         {
@@ -42,7 +56,6 @@ namespace HDT_BGrank
             mirror = null;
             oppDict = null;
             oppNames = null;
-            unsortDict = null;
             leaderBoard = null;
         }
 
@@ -78,8 +91,8 @@ namespace HDT_BGrank
                 else if (!namesReady) { GetOppNames(); }
                 else if (leaderBoardReady)
                 {
+                    Dictionary<string, int> unsortDict = new Dictionary<string, int>();
                     oppDict = new Dictionary<string, string>();
-                    unsortDict = new Dictionary<string, int>();
                     foreach (string name in oppNames)
                     {
                         if (leaderBoard.TryGetValue(name, out string value))
@@ -111,7 +124,7 @@ namespace HDT_BGrank
         {
             if (!Core.Game.IsBattlegroundsMatch || leaderBoardReady || failToGetData) { return; }
 
-            // Get the leaderboard information from: https://bgrank.fly.dev/
+            // Get the leaderboard information from web, see https://github.com/IBM5100o/BGrank_bot
             leaderBoard = new Dictionary<string, string>();
             string region = GetRegionStr();
             string path, url;
@@ -134,37 +147,35 @@ namespace HDT_BGrank
                 num_tries++;
                 try
                 {
-                    using (HttpClient client = new HttpClient())
+                    Log.Info($"Try to get the leaderboard from {url} (try {num_tries}/{max_tries})");
+                    string response = await client.GetStringAsync(url);
+                    if (string.IsNullOrEmpty(response))
                     {
-                        client.DefaultRequestHeaders.Add("User-Agent", "User-Agent-Here");
-                        string response = await client.GetStringAsync(url);
-                        if (string.IsNullOrEmpty(response)) 
+                        if (num_tries < max_tries) { await Task.Delay(10000); }
+                        continue;
+                    }
+
+                    string[] lines = response.Split('\n');
+                    for (int i = 0; i < lines.Length-1; i++)
+                    {
+                        string line = lines[i];
+                        if (i > 0)
                         {
-                            if (num_tries < max_tries) { await Task.Delay(10000); }
-                            continue; 
+                            line = line.Substring(6);
                         }
-
-                        string[] lines = response.Split('\n');
-
-                        for (int i = 0; i < lines.Length-1; i++)
+                        string[] tmp = line.Split(' ');
+                        if (tmp.Length == 2)
                         {
-                            string line = lines[i];
-                            if (i > 0)
-                            {
-                                line = line.Substring(6);
-                            }
-                            string[] tmp = line.Split(' ');
-                            if (tmp.Length == 2)
-                            {
-                                string name = tmp[0];
-                                string rating = tmp[1];
-                                if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(rating)) { continue; }
-                                if (!leaderBoard.ContainsKey(name)) { leaderBoard.Add(name, rating); }
-                            }
+                            string name = tmp[0];
+                            string rating = tmp[1];
+                            if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(rating)) { continue; }
+                            if (!leaderBoard.ContainsKey(name)) { leaderBoard.Add(name, rating); }
                         }
                     }
-                    if (leaderBoard.Count != 0) 
+
+                    if (leaderBoard.Count != 0)
                     {
+                        Log.Info("Success to get the leaderboard from web!");
                         leaderBoardReady = true;
                         using (StreamWriter writer = new StreamWriter(path))
                         {
@@ -183,7 +194,8 @@ namespace HDT_BGrank
             }
 
             if (!leaderBoardReady) 
-            { 
+            {
+                Log.Info("Fail to get the leaderboard from web, try to get it from local...");
                 if (File.Exists(path))
                 {
                     try
@@ -197,7 +209,11 @@ namespace HDT_BGrank
                                 leaderBoard.Add(tmp[0], tmp[1]);
                             }
                         }
-                        if (leaderBoard.Count != 0) { leaderBoardReady = true; }
+                        if (leaderBoard.Count != 0) 
+                        {
+                            Log.Info("Success to get the leaderboard from local!");
+                            leaderBoardReady = true;
+                        }
                         else { failToGetData = true; }
                     }
                     catch (Exception ex)
@@ -211,6 +227,7 @@ namespace HDT_BGrank
                     failToGetData = true;
                 }
             }
+            if (failToGetData) { Log.Info("Fail to get the leaderboard from local, no data for this match"); }
         }
 
         private string GetRegionStr()
