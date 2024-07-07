@@ -30,14 +30,7 @@ namespace HDT_BGrank
 
         public BGrank()
         {
-            var handler = new HttpClientHandler
-            {
-                UseCookies = true,
-                CookieContainer = new CookieContainer(),
-                AllowAutoRedirect = true,
-                ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
-            };
-            client = new HttpClient(handler);
+            client = new HttpClient();
             client.DefaultRequestHeaders.Add("User-Agent", "User-Agent-Here");
         }
 
