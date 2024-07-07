@@ -38,11 +38,9 @@ If there are players with a same name, the highest MMR will be picked.
 
 If there is a bug, you can report it [here](https://github.com/IBM5100o/HDT_BGrank/issues).  
 
-And if you can provide the error message, it's helpful for me to fix the bug.  
+And if you can provide the log file, it's helpful for me to fix the bug.  
 
-The error message is in the log file at: `%AppData%\HearthstoneDeckTracker\Logs`  
-
-Open the log file and search **bgrank**, and then you can get the error message.  
+The log file is at: `%AppData%\HearthstoneDeckTracker\Logs`  
 
 # References  
 
