@@ -242,7 +242,8 @@ namespace HDT_BGrank
             // The code below is from: https://github.com/Zero-to-Heroes/unity-spy-.net4.5
             try
             {
-                string myName = Reflection.Client.GetMatchInfo().LocalPlayer.Name;
+                string myName = Reflection.Client?.GetMatchInfo()?.LocalPlayer?.Name;
+                if (string.IsNullOrEmpty(myName)) { return; }
                 var leaderboardMgr = mirror.Root?["PlayerLeaderboardManager"]?["s_instance"];
                 dynamic[] playerTiles = GetPlayerTiles(leaderboardMgr);
                 var numberOfPlayerTiles = playerTiles?.Length ?? 0;

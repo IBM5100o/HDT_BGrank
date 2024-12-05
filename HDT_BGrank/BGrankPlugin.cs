@@ -39,21 +39,20 @@ namespace HDT_BGrank
         {
             CreateMenuItem();
             MenuItem.IsChecked = true;
-            rank = new BGrank();
-            GameEvents.OnGameStart.Add(rank.OnGameStart);
-            GameEvents.OnTurnStart.Add(rank.OnTurnStart);
         }
 
         public void OnUnload()
         {
             MenuItem.IsChecked = false;
-            rank = null;
         }
 
         public void OnUpdate()
         {
-            rank.OnUpdate();
-            leaderBoardPanel.OnUpdate(rank);
+            if (rank != null) 
+            {
+                rank.OnUpdate();
+                leaderBoardPanel.OnUpdate(rank);
+            }
         }
 
         private void CreateMenuItem()
@@ -67,8 +66,11 @@ namespace HDT_BGrank
 
             MenuItem.Checked += async (sender, args) =>
             {
-                if (leaderBoardPanel == null)
+                if (rank == null)
                 {
+                    rank = new BGrank();
+                    GameEvents.OnGameStart.Add(rank.OnGameStart);
+                    GameEvents.OnTurnStart.Add(rank.OnTurnStart);
                     leaderBoardPanel = new LeaderBoardPanel();
                     Core.OverlayCanvas.Children.Add(leaderBoardPanel);
                 }
@@ -76,17 +78,15 @@ namespace HDT_BGrank
 
             MenuItem.Unchecked += (sender, args) =>
             {
-                using (leaderBoardPanel)
-                {
-                    Core.OverlayCanvas.Children.Remove(leaderBoardPanel);
-                    leaderBoardPanel = null;
-                }
+                rank = null;
+                Core.OverlayCanvas.Children.Remove(leaderBoardPanel);
+                leaderBoardPanel = null;
             };
         }
 
         public Version Version
         {
-            get { return new Version(1, 1, 6); }
+            get { return new Version(1, 1, 7); }
         }
 
     }
