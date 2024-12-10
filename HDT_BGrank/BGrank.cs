@@ -19,10 +19,8 @@ namespace HDT_BGrank
 
         private bool isReset = true;
         private bool namesReady = false;
-        private bool playerReady = false;
         private bool leaderBoardReady = false;
 
-        private Mirror mirror = null;
         private List<string> oppNames = null;
         private Dictionary<string, string> leaderBoard = null;
         private readonly HttpClient client;
@@ -37,7 +35,6 @@ namespace HDT_BGrank
         {
             done = false;
             namesReady = false;
-            playerReady = false;
             failToGetData = false;
             leaderBoardReady = false;
             ClearMemory();
@@ -45,7 +42,6 @@ namespace HDT_BGrank
 
         public void ClearMemory()
         {
-            mirror = null;
             oppDict = null;
             oppNames = null;
             leaderBoard = null;
@@ -59,7 +55,7 @@ namespace HDT_BGrank
         public void OnTurnStart(ActivePlayer player)
         {
             GetLeaderBoard();
-            playerReady = true;
+            GetOppNames();
         }
 
         public void OnUpdate() 
@@ -74,14 +70,9 @@ namespace HDT_BGrank
             }
             else if (!done && Core.Game.IsBattlegroundsMatch)
             {
-                if (isReset)
-                {
-                    mirror = new Mirror { ImageName = "Hearthstone" };
-                    isReset = false;
-                }
+                isReset = false;
                 if (failToGetData) { done = true; }
-                else if (!namesReady) { GetOppNames(); }
-                else if (leaderBoardReady)
+                else if (namesReady && leaderBoardReady)
                 {
                     Dictionary<string, int> unsortDict = new Dictionary<string, int>();
                     oppDict = new Dictionary<string, string>();
@@ -151,10 +142,7 @@ namespace HDT_BGrank
                     for (int i = 0; i < lines.Length-1; i++)
                     {
                         string line = lines[i];
-                        if (i > 0)
-                        {
-                            line = line.Substring(6);
-                        }
+                        if (i > 0) { line = line.Substring(6); }
                         string[] tmp = line.Split(' ');
                         if (tmp.Length == 2)
                         {
@@ -237,18 +225,18 @@ namespace HDT_BGrank
 
         private void GetOppNames()
         {
-            if (!playerReady) { return; }
+            if (!Core.Game.IsBattlegroundsMatch || namesReady) { return; }
 
             // The code below is from: https://github.com/Zero-to-Heroes/unity-spy-.net4.5
             try
             {
                 string myName = Reflection.Client?.GetMatchInfo()?.LocalPlayer?.Name;
                 if (string.IsNullOrEmpty(myName)) { return; }
+                Mirror mirror = new Mirror { ImageName = "Hearthstone" };
                 var leaderboardMgr = mirror.Root?["PlayerLeaderboardManager"]?["s_instance"];
                 dynamic[] playerTiles = GetPlayerTiles(leaderboardMgr);
                 var numberOfPlayerTiles = playerTiles?.Length ?? 0;
                 if (numberOfPlayerTiles == 0) { return; }
-                bool allPass = true;
                 List<string> tmpNames = new List<string>();
 
                 for (int i = 0; i < numberOfPlayerTiles; i++)
@@ -256,27 +244,21 @@ namespace HDT_BGrank
                     var playerTile = playerTiles[i];
                     // Info not available until the player mouses over the tile in the leaderboard, and there is no other way to get it
                     string playerName = playerTile["m_overlay"]?["m_heroActor"]?["m_playerNameText"]?["m_Text"];
-                    if (string.IsNullOrEmpty(playerName)) 
-                    {
-                        allPass = false;
-                        break;
-                    }
+                    if (string.IsNullOrEmpty(playerName)) { return; }
                     if (playerName != myName && !tmpNames.Contains(playerName)) { tmpNames.Add(playerName); }
                 }
-                if (allPass)
+
+                // For those who use the BattleTag MOD
+                for (int i = 0; i < tmpNames.Count; i++)
                 {
-                    // For those who use the BattleTag MOD
-                    for (int i = 0; i < tmpNames.Count; i++)
+                    int index = tmpNames[i].IndexOf('#');
+                    if (index > 0)
                     {
-                        int index = tmpNames[i].IndexOf('#');
-                        if (index > 0)
-                        {
-                            tmpNames[i] = tmpNames[i].Substring(0, index);
-                        }
+                        tmpNames[i] = tmpNames[i].Substring(0, index);
                     }
-                    oppNames = new List<string>(tmpNames);
-                    namesReady = true;
                 }
+                oppNames = new List<string>(tmpNames);
+                namesReady = true;
             }
             catch (Exception ex) 
             {
@@ -287,22 +269,26 @@ namespace HDT_BGrank
         // The code below is from: https://github.com/Zero-to-Heroes/unity-spy-.net4.5
         private static dynamic[] GetPlayerTiles(dynamic leaderboardMgr)
         {
-            var result = new List<dynamic>();
-            var teams = leaderboardMgr["m_teams"]?["_items"];
-            foreach (var team in teams)
+            try
             {
-                if (team == null)
-                {
-                    continue;
-                }
-
-                var tiles = team["m_playerLeaderboardCards"]?["_items"];
-                foreach (var tile in tiles)
-                {
-                    result.Add(tile);
-                }
+                return leaderboardMgr?["m_playerTiles"]?["_items"];
             }
-            return result.ToArray();
+            catch (Exception)
+            {
+                var result = new List<dynamic>();
+                var teams = leaderboardMgr["m_teams"]?["_items"];
+                foreach (var team in teams)
+                {
+                    if (team == null) { continue; }
+
+                    var tiles = team["m_playerLeaderboardCards"]?["_items"];
+                    foreach (var tile in tiles)
+                    {
+                        result.Add(tile);
+                    }
+                }
+                return result.ToArray();
+            }
         }
     }
 }
