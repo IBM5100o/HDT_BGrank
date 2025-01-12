@@ -78,15 +78,18 @@ namespace HDT_BGrank
 
             MenuItem.Unchecked += (sender, args) =>
             {
-                rank = null;
-                Core.OverlayCanvas.Children.Remove(leaderBoardPanel);
-                leaderBoardPanel = null;
+                if (rank != null)
+                {
+                    rank = null;
+                    Core.OverlayCanvas.Children.Remove(leaderBoardPanel);
+                    leaderBoardPanel = null;
+                }
             };
         }
 
         public Version Version
         {
-            get { return new Version(1, 1, 8); }
+            get { return new Version(1, 1, 9); }
         }
 
     }

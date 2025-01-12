@@ -8,6 +8,7 @@ using HearthMirror;
 using Hearthstone_Deck_Tracker;
 using Hearthstone_Deck_Tracker.Enums;
 using Hearthstone_Deck_Tracker.Utility.Logging;
+using HearthMirror.Objects;
 
 namespace HDT_BGrank
 {
@@ -230,7 +231,7 @@ namespace HDT_BGrank
             // The code below is from: https://github.com/Zero-to-Heroes/unity-spy-.net4.5
             try
             {
-                string myName = Reflection.Client?.GetMatchInfo()?.LocalPlayer?.Name;
+                string myName = Reflection.Client?.GetBattleTag()?.Name;
                 if (string.IsNullOrEmpty(myName)) { return; }
                 Mirror mirror = new Mirror { ImageName = "Hearthstone" };
                 var leaderboardMgr = mirror.Root?["PlayerLeaderboardManager"]?["s_instance"];
