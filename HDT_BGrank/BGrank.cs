@@ -8,7 +8,6 @@ using HearthMirror;
 using Hearthstone_Deck_Tracker;
 using Hearthstone_Deck_Tracker.Enums;
 using Hearthstone_Deck_Tracker.Utility.Logging;
-using HearthMirror.Objects;
 
 namespace HDT_BGrank
 {
@@ -20,11 +19,12 @@ namespace HDT_BGrank
 
         private bool isReset = true;
         private bool namesReady = false;
+        private bool playersReady = false;
         private bool leaderBoardReady = false;
 
+        private readonly HttpClient client;
         private List<string> oppNames = null;
         private Dictionary<string, string> leaderBoard = null;
-        private readonly HttpClient client;
 
         public BGrank()
         {
@@ -36,6 +36,7 @@ namespace HDT_BGrank
         {
             done = false;
             namesReady = false;
+            playersReady = false;
             failToGetData = false;
             leaderBoardReady = false;
             ClearMemory();
@@ -56,7 +57,7 @@ namespace HDT_BGrank
         public void OnTurnStart(ActivePlayer player)
         {
             GetLeaderBoard();
-            GetOppNames();
+            playersReady = true;
         }
 
         public void OnUpdate() 
@@ -73,7 +74,8 @@ namespace HDT_BGrank
             {
                 isReset = false;
                 if (failToGetData) { done = true; }
-                else if (namesReady && leaderBoardReady)
+                else if (!namesReady) { GetOppNames(); }
+                else if (leaderBoardReady)
                 {
                     Dictionary<string, int> unsortDict = new Dictionary<string, int>();
                     oppDict = new Dictionary<string, string>();
@@ -226,7 +228,7 @@ namespace HDT_BGrank
 
         private void GetOppNames()
         {
-            if (!Core.Game.IsBattlegroundsMatch || namesReady) { return; }
+            if (!Core.Game.IsBattlegroundsMatch || !playersReady) { return; }
 
             // The code below is from: https://github.com/Zero-to-Heroes/unity-spy-.net4.5
             try
