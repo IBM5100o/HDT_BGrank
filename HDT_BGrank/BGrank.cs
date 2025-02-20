@@ -228,7 +228,7 @@ namespace HDT_BGrank
 
         private void GetOppNames()
         {
-            if (!Core.Game.IsBattlegroundsMatch || !playersReady) { return; }
+            if (!playersReady) { return; }
 
             // The code below is from: https://github.com/Zero-to-Heroes/unity-spy-.net4.5
             try
@@ -237,6 +237,7 @@ namespace HDT_BGrank
                 if (string.IsNullOrEmpty(myName)) { return; }
                 Mirror mirror = new Mirror { ImageName = "Hearthstone" };
                 var leaderboardMgr = mirror.Root?["PlayerLeaderboardManager"]?["s_instance"];
+                if (leaderboardMgr == null) { return; }
                 dynamic[] playerTiles = GetPlayerTiles(leaderboardMgr);
                 var numberOfPlayerTiles = playerTiles?.Length ?? 0;
                 if (numberOfPlayerTiles == 0) { return; }
@@ -280,16 +281,18 @@ namespace HDT_BGrank
             {
                 var result = new List<dynamic>();
                 var teams = leaderboardMgr["m_teams"]?["_items"];
-                foreach (var team in teams)
-                {
-                    if (team == null) { continue; }
 
+                for (uint i = 0; i < teams.size(); i++)
+                {
+                    var team = teams[i];
+                    if (team == null) { continue; }
                     var tiles = team["m_playerLeaderboardCards"]?["_items"];
-                    foreach (var tile in tiles)
+                    for (uint j = 0; j < tiles.size(); j++)
                     {
-                        result.Add(tile);
+                        result.Add(tiles[j]);
                     }
                 }
+
                 return result.ToArray();
             }
         }

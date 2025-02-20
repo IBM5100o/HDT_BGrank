@@ -10,6 +10,7 @@ namespace HDT_BGrank
         public MenuItem MenuItem { get; private set; }
         private BGrank rank = null;
         private LeaderBoardPanel leaderBoardPanel = null;
+        private DateTime lastUpdate = DateTime.Now;
 
         public string Author
         {
@@ -50,8 +51,12 @@ namespace HDT_BGrank
         {
             if (rank != null) 
             {
-                rank.OnUpdate();
-                leaderBoardPanel.OnUpdate(rank);
+                if ((DateTime.Now - lastUpdate).TotalSeconds >= 1) 
+                {
+                    rank.OnUpdate();
+                    leaderBoardPanel.OnUpdate(rank);
+                    lastUpdate = DateTime.Now;
+                }
             }
         }
 
@@ -89,7 +94,7 @@ namespace HDT_BGrank
 
         public Version Version
         {
-            get { return new Version(1, 2, 0); }
+            get { return new Version(1, 2, 1); }
         }
 
     }
