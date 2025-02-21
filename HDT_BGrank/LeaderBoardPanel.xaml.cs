@@ -17,10 +17,14 @@ namespace HDT_BGrank
         public LeaderBoardPanel()
         {
             InitializeComponent();
+            Visibility = Visibility.Hidden;
+        }
+
+        public void SetHitTestVisible()
+        {
             OverlayExtensions.SetIsOverlayHitTestVisible(LeaderText, true);
             OverlayExtensions.SetIsOverlayHitTestVisible(DeleteButton, true);
             OverlayExtensions.SetIsOverlayHitTestVisible(HiddenButton, true);
-            Visibility = Visibility.Hidden;
         }
 
         public void OnUpdate(BGrank rank)

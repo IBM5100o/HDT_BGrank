@@ -78,6 +78,7 @@ namespace HDT_BGrank
                     GameEvents.OnTurnStart.Add(rank.OnTurnStart);
                     leaderBoardPanel = new LeaderBoardPanel();
                     Core.OverlayCanvas.Children.Add(leaderBoardPanel);
+                    leaderBoardPanel.SetHitTestVisible();
                 }
             };
 
@@ -94,7 +95,7 @@ namespace HDT_BGrank
 
         public Version Version
         {
-            get { return new Version(1, 2, 1); }
+            get { return new Version(1, 2, 2); }
         }
 
     }
