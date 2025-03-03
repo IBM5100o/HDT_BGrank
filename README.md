@@ -10,7 +10,9 @@ Here is it looks like:
 
 After a match starts, slip your mouse cursor on everyone's portrait at left,  
 
-and then the MMR information will show up. (you can move the panel by dragging it)  
+and then the MMR information will show up.  
+
+You can move the panel by dragging it and scale it by scrolling your mouse.  
 
 Since the leaderboard only records the 8000+ MMR players,  
 
