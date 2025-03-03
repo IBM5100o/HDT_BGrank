@@ -9,6 +9,7 @@ namespace HDT_BGrank
 {
     public partial class LeaderBoardPanel : UserControl, IDisposable
     {
+        private bool isFirst = true;
         private bool finished = false;
         private bool isDragging = false;
         private Point originalGridPosition;
@@ -38,10 +39,17 @@ namespace HDT_BGrank
             {
                 int i = 0;
                 string allText = "\n";
-                double ratio = Core.OverlayWindow.Width / 1920.0;
-                if (ratio < 0.5) { ratio = 0.5; }
-                GridTransform.ScaleX = ratio;
-                GridTransform.ScaleY = ratio;
+
+                if (isFirst)
+                {
+                    double ratio = Core.OverlayWindow.Width / 1920.0;
+                    if (ratio < 0.5) { ratio = 0.5; }
+                    else if (ratio > 2.0) { ratio = 2.0; }
+                    GridTransform.ScaleX = ratio;
+                    GridTransform.ScaleY = ratio;
+                    isFirst = false;
+                }
+                
                 if (rank.failToGetData) { allText += "No data now"; }
                 else
                 {
@@ -110,6 +118,20 @@ namespace HDT_BGrank
                 Thickness newMargin = new Thickness(newLeft, newTop, LeaderGrid.Margin.Right, LeaderGrid.Margin.Bottom);
                 LeaderGrid.Margin = newMargin;
             }
+        }
+
+        private void LeaderText_MouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            double newRatio = GridTransform.ScaleX;
+
+            if (e.Delta > 0) { newRatio -= 0.1; }
+            else if (e.Delta < 0) { newRatio += 0.1; }
+
+            if (newRatio < 0.5) { newRatio = 0.5; }
+            else if (newRatio > 2.0) { newRatio = 2.0; }
+    
+            GridTransform.ScaleX = newRatio;
+            GridTransform.ScaleY = newRatio;
         }
 
         public void Dispose()
