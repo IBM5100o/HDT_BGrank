@@ -2,6 +2,7 @@
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Controls;
+using HDT_BGrank.Properties;
 using Hearthstone_Deck_Tracker.API;
 using Hearthstone_Deck_Tracker.Utility.Extensions;
 
@@ -10,6 +11,7 @@ namespace HDT_BGrank
     public partial class LeaderBoardPanel : UserControl, IDisposable
     {
         private bool isFirst = true;
+        private bool isChange = false;
         private bool finished = false;
         private bool isDragging = false;
         private Point originalGridPosition;
@@ -19,6 +21,14 @@ namespace HDT_BGrank
         {
             InitializeComponent();
             Visibility = Visibility.Hidden;
+            if (Settings.Default.ifLoad)
+            {
+                GridTransform.ScaleX = Settings.Default.scaleRatio;
+                GridTransform.ScaleY = Settings.Default.scaleRatio;
+                Thickness newMargin = new Thickness(Settings.Default.positionLeft, Settings.Default.positionTop, LeaderGrid.Margin.Right, LeaderGrid.Margin.Bottom);
+                LeaderGrid.Margin = newMargin;
+                isFirst = false;
+            }
         }
 
         public void SetHitTestVisible()
@@ -117,6 +127,7 @@ namespace HDT_BGrank
 
                 Thickness newMargin = new Thickness(newLeft, newTop, LeaderGrid.Margin.Right, LeaderGrid.Margin.Bottom);
                 LeaderGrid.Margin = newMargin;
+                isChange = true;
             }
         }
 
@@ -132,6 +143,19 @@ namespace HDT_BGrank
     
             GridTransform.ScaleX = newRatio;
             GridTransform.ScaleY = newRatio;
+            isChange = true;
+        }
+
+        public void SaveSettings()
+        {
+            if (isChange)
+            {
+                Settings.Default.scaleRatio = GridTransform.ScaleX;
+                Settings.Default.positionLeft = LeaderGrid.Margin.Left;
+                Settings.Default.positionTop = LeaderGrid.Margin.Top;
+                Settings.Default.ifLoad = true;
+                Settings.Default.Save();
+            }
         }
 
         public void Dispose()

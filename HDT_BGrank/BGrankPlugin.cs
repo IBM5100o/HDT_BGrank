@@ -87,6 +87,7 @@ namespace HDT_BGrank
                 if (rank != null)
                 {
                     rank = null;
+                    leaderBoardPanel.SaveSettings();
                     Core.OverlayCanvas.Children.Remove(leaderBoardPanel);
                     leaderBoardPanel = null;
                 }
@@ -95,7 +96,7 @@ namespace HDT_BGrank
 
         public Version Version
         {
-            get { return new Version(1, 2, 3); }
+            get { return new Version(1, 2, 4); }
         }
 
     }
