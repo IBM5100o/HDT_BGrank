@@ -2,7 +2,6 @@
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Controls;
-using HDT_BGrank.Properties;
 using Hearthstone_Deck_Tracker.API;
 using Hearthstone_Deck_Tracker.Utility.Extensions;
 
@@ -21,11 +20,13 @@ namespace HDT_BGrank
         {
             InitializeComponent();
             Visibility = Visibility.Hidden;
-            if (Settings.Default.ifLoad)
+
+            Settings.Load();
+            if (Settings.Instance.ifLoad)
             {
-                GridTransform.ScaleX = Settings.Default.scaleRatio;
-                GridTransform.ScaleY = Settings.Default.scaleRatio;
-                Thickness newMargin = new Thickness(Settings.Default.positionLeft, Settings.Default.positionTop, LeaderGrid.Margin.Right, LeaderGrid.Margin.Bottom);
+                GridTransform.ScaleX = Settings.Instance.scaleRatio;
+                GridTransform.ScaleY = Settings.Instance.scaleRatio;
+                Thickness newMargin = new Thickness(Settings.Instance.positionLeft, Settings.Instance.positionTop, LeaderGrid.Margin.Right, LeaderGrid.Margin.Bottom);
                 LeaderGrid.Margin = newMargin;
                 isFirst = false;
             }
@@ -150,11 +151,11 @@ namespace HDT_BGrank
         {
             if (isChange)
             {
-                Settings.Default.scaleRatio = GridTransform.ScaleX;
-                Settings.Default.positionLeft = LeaderGrid.Margin.Left;
-                Settings.Default.positionTop = LeaderGrid.Margin.Top;
-                Settings.Default.ifLoad = true;
-                Settings.Default.Save();
+                Settings.Instance.scaleRatio = GridTransform.ScaleX;
+                Settings.Instance.positionLeft = LeaderGrid.Margin.Left;
+                Settings.Instance.positionTop = LeaderGrid.Margin.Top;
+                Settings.Instance.ifLoad = true;
+                Settings.Save();
             }
         }
 

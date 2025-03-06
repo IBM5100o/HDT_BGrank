@@ -96,7 +96,7 @@ namespace HDT_BGrank
 
         public Version Version
         {
-            get { return new Version(1, 2, 4); }
+            get { return new Version(1, 2, 5); }
         }
 
     }

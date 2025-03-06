@@ -119,12 +119,12 @@ namespace HDT_BGrank
 
             if (Core.Game.IsBattlegroundsSoloMatch)
             {
-                path = $"LeaderBoard_{region}.txt";
+                path = Path.Combine(Config.AppDataPath, $"LeaderBoard_{region}.txt");
                 url = $"https://bgrank.fly.dev/{region}/";
             }
             else
             {
-                path = $"LeaderBoard_{region}_duo.txt";
+                path = Path.Combine(Config.AppDataPath, $"LeaderBoard_{region}_duo.txt");
                 url = $"https://bgrank.fly.dev/{region}_duo/";
             }
 
