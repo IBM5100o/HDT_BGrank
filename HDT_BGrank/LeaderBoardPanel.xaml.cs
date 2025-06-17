@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Controls;
@@ -48,9 +49,6 @@ namespace HDT_BGrank
             }
             else if (!finished && rank.done)
             {
-                int i = 0;
-                string allText = "\n";
-
                 if (isFirst)
                 {
                     double ratio = Core.OverlayWindow.Width / 1920.0;
@@ -60,18 +58,17 @@ namespace HDT_BGrank
                     GridTransform.ScaleY = ratio;
                     isFirst = false;
                 }
-                
-                if (rank.failToGetData) { allText += "No data now"; }
+
+                StringBuilder allText = new StringBuilder();
+                if (rank.failToGetData) { allText.Append("\nNo data now"); }
                 else
                 {
                     foreach (var opp in rank.oppDict)
                     {
-                        allText += opp.Key + " " + opp.Value;
-                        i++;
-                        if (i < rank.oppDict.Count) { allText += "\n"; }
+                        allText.Append($"\n{opp.Key} {opp.Value}");
                     }
                 }
-                LeaderText.Text = allText;
+                LeaderText.Text = allText.ToString();
                 finished = true;
                 Visibility = Visibility.Visible;
                 rank.ClearMemory();
@@ -95,22 +92,21 @@ namespace HDT_BGrank
             }
         }
 
-        private void LeaderText_MouseDown(object sender, MouseButtonEventArgs e)
+        private void LeaderText_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            if (e.ChangedButton == MouseButton.Left)
-            {
-                isDragging = true;
-                originalMousePosition = e.GetPosition(this);
-                originalGridPosition = new Point(LeaderGrid.Margin.Left, LeaderGrid.Margin.Top);
-            }
+            isDragging = true;
+            originalMousePosition = e.GetPosition(this);
+            originalGridPosition = new Point(LeaderGrid.Margin.Left, LeaderGrid.Margin.Top);
         }
 
-        private void LeaderText_MouseUp(object sender, MouseButtonEventArgs e)
+        private void LeaderText_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
-            if (e.ChangedButton == MouseButton.Left)
-            {
-                isDragging = false;
-            }
+            isDragging = false;
+        }
+
+        private void LeaderText_MouseLeave(object sender, MouseEventArgs e)
+        {
+            isDragging = false;
         }
 
         private void LeaderText_MouseMove(object sender, MouseEventArgs e)

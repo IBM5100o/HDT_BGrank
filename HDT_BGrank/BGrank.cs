@@ -141,11 +141,10 @@ namespace HDT_BGrank
                         continue;
                     }
 
-                    string[] lines = response.Split('\n');
-                    for (int i = 0; i < lines.Length-1; i++)
+                    string[] lines = response.Split(new string[] { "\n<br />" }, StringSplitOptions.RemoveEmptyEntries);
+                    for (int i = 0; i < lines.Length; i++)
                     {
                         string line = lines[i];
-                        if (i > 0) { line = line.Substring(6); }
                         string[] tmp = line.Split(' ');
                         if (tmp.Length == 2)
                         {
@@ -164,7 +163,7 @@ namespace HDT_BGrank
                         {
                             foreach (var player in leaderBoard)
                             {
-                                writer.WriteLine(player.Key + " " + player.Value);
+                                writer.WriteLine($"{player.Key} {player.Value}");
                             }
                         }
                     }
