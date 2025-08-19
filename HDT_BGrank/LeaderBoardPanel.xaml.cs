@@ -27,8 +27,7 @@ namespace HDT_BGrank
             {
                 GridTransform.ScaleX = Settings.Instance.scaleRatio;
                 GridTransform.ScaleY = Settings.Instance.scaleRatio;
-                Thickness newMargin = new Thickness(Settings.Instance.positionLeft, Settings.Instance.positionTop, LeaderGrid.Margin.Right, LeaderGrid.Margin.Bottom);
-                LeaderGrid.Margin = newMargin;
+                LeaderGrid.Margin = new Thickness(Settings.Instance.positionLeft, Settings.Instance.positionTop, 0.0, 0.0);
                 isFirst = false;
             }
         }
@@ -51,9 +50,7 @@ namespace HDT_BGrank
             {
                 if (isFirst)
                 {
-                    double ratio = Core.OverlayWindow.Width / 1920.0;
-                    if (ratio < 0.5) { ratio = 0.5; }
-                    else if (ratio > 2.0) { ratio = 2.0; }
+                    double ratio = Math.Max(0.5, Math.Min(Core.OverlayWindow.Width/1920.0, 2.0));
                     GridTransform.ScaleX = ratio;
                     GridTransform.ScaleY = ratio;
                     isFirst = false;
@@ -72,6 +69,8 @@ namespace HDT_BGrank
                 finished = true;
                 Visibility = Visibility.Visible;
                 rank.ClearMemory();
+
+                SetPosition(LeaderGrid.Margin.Left, LeaderGrid.Margin.Top);
             }
         }
 
@@ -119,11 +118,8 @@ namespace HDT_BGrank
 
                 double newLeft = originalGridPosition.X + offsetX;
                 double newTop = originalGridPosition.Y + offsetY;
-                if (newLeft < 0) { newLeft = 0; }
-                if (newTop < 0) { newTop = 0; }
 
-                Thickness newMargin = new Thickness(newLeft, newTop, LeaderGrid.Margin.Right, LeaderGrid.Margin.Bottom);
-                LeaderGrid.Margin = newMargin;
+                SetPosition(newLeft, newTop);
                 isChange = true;
             }
         }
@@ -135,9 +131,8 @@ namespace HDT_BGrank
             if (e.Delta > 0) { newRatio -= 0.1; }
             else if (e.Delta < 0) { newRatio += 0.1; }
 
-            if (newRatio < 0.5) { newRatio = 0.5; }
-            else if (newRatio > 2.0) { newRatio = 2.0; }
-    
+            newRatio = Math.Max(0.5, Math.Min(newRatio, 2.0));
+
             GridTransform.ScaleX = newRatio;
             GridTransform.ScaleY = newRatio;
             isChange = true;
@@ -153,6 +148,13 @@ namespace HDT_BGrank
                 Settings.Instance.ifLoad = true;
                 Settings.Save();
             }
+        }
+
+        private void SetPosition(double nowLeft, double nowTop)
+        {
+            double newLeft = Math.Max(0.0, Math.Min(nowLeft, Core.OverlayWindow.Width - LeaderText.ActualWidth*GridTransform.ScaleX));
+            double newTop = Math.Max(0.0, Math.Min(nowTop, Core.OverlayWindow.Height - LeaderText.ActualHeight*GridTransform.ScaleX));
+            LeaderGrid.Margin = new Thickness(newLeft, newTop, 0.0, 0.0);
         }
 
         public void Dispose()

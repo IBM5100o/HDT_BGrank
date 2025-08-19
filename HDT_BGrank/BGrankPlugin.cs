@@ -19,7 +19,7 @@ namespace HDT_BGrank
 
         public string ButtonText
         {
-            get { return "No Settings"; }
+            get { return "Reset"; }
         }
 
         public string Description
@@ -34,6 +34,25 @@ namespace HDT_BGrank
 
         public void OnButtonPress()
         {
+            Settings.Instance.scaleRatio = 1.0;
+            Settings.Instance.positionLeft = 0.0;
+            Settings.Instance.positionTop = 0.0;
+            Settings.Instance.ifLoad = false;
+            Settings.Save();
+
+            if (rank != null)
+            {
+                rank = null;
+                Core.OverlayCanvas.Children.Remove(leaderBoardPanel);
+                leaderBoardPanel = null;
+
+                rank = new BGrank();
+                GameEvents.OnGameStart.Add(rank.OnGameStart);
+                GameEvents.OnTurnStart.Add(rank.OnTurnStart);
+                leaderBoardPanel = new LeaderBoardPanel();
+                Core.OverlayCanvas.Children.Add(leaderBoardPanel);
+                leaderBoardPanel.SetHitTestVisible();
+            }
         }
 
         public void OnLoad()
@@ -69,7 +88,7 @@ namespace HDT_BGrank
 
             MenuItem.IsCheckable = true;
 
-            MenuItem.Checked += async (sender, args) =>
+            MenuItem.Checked += (sender, args) =>
             {
                 if (rank == null)
                 {
@@ -96,7 +115,7 @@ namespace HDT_BGrank
 
         public Version Version
         {
-            get { return new Version(1, 2, 6); }
+            get { return new Version(1, 2, 7); }
         }
 
     }
