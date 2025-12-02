@@ -94,7 +94,14 @@ namespace HDT_BGrank
                     {
                         if (opp.Value == 0)
                         {
-                            oppDict.Add(opp.Key, "8000↓");
+                            if (Core.Game.CurrentRegion == Region.CHINA)
+                            {
+                                oppDict.Add(opp.Key, "-");
+                            }
+                            else
+                            {
+                                oppDict.Add(opp.Key, "8000↓");
+                            }
                         }
                         else
                         {
@@ -220,6 +227,8 @@ namespace HDT_BGrank
                     return "US";
                 case Region.EU:
                     return "EU";
+                case Region.CHINA:
+                    return "CN";
                 default:
                     return "AP";
             }
