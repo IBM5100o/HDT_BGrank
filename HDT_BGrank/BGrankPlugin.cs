@@ -1,7 +1,11 @@
-﻿using System;
-using System.Windows.Controls;
-using Hearthstone_Deck_Tracker.API;
+﻿using Hearthstone_Deck_Tracker.API;
 using Hearthstone_Deck_Tracker.Plugins;
+using Hearthstone_Deck_Tracker.Windows;
+using System;
+using System.Collections.Generic;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 
 namespace HDT_BGrank
 {
@@ -46,11 +50,15 @@ namespace HDT_BGrank
                 Core.OverlayCanvas.Children.Remove(leaderBoardPanel);
                 leaderBoardPanel = null;
 
-                rank = new BGrank();
+                leaderBoardPanel = new LeaderBoardPanel();
+                rank = new BGrank(leaderBoardPanel);
                 GameEvents.OnGameStart.Add(rank.OnGameStart);
                 GameEvents.OnTurnStart.Add(rank.OnTurnStart);
-                leaderBoardPanel = new LeaderBoardPanel();
-                Core.OverlayCanvas.Children.Add(leaderBoardPanel);
+
+                //Core.OverlayCanvas.Children.Add(leaderBoardPanel);
+                var movables = (Dictionary<UIElement, ResizeGrip>)typeof(OverlayWindow).GetField("_movableElements").GetValue(Core.OverlayWindow);
+                movables.Add(leaderBoardPanel, new ResizeGrip());
+
                 leaderBoardPanel.SetHitTestVisible();
             }
         }
@@ -73,7 +81,8 @@ namespace HDT_BGrank
                 if ((DateTime.Now - lastUpdate).TotalSeconds >= 1) 
                 {
                     rank.OnUpdate();
-                    leaderBoardPanel.OnUpdate(rank);
+                    leaderBoardPanel.OnUpdate();
+
                     lastUpdate = DateTime.Now;
                 }
             }
@@ -92,10 +101,10 @@ namespace HDT_BGrank
             {
                 if (rank == null)
                 {
-                    rank = new BGrank();
+                    leaderBoardPanel = new LeaderBoardPanel();
+                    rank = new BGrank(leaderBoardPanel);
                     GameEvents.OnGameStart.Add(rank.OnGameStart);
                     GameEvents.OnTurnStart.Add(rank.OnTurnStart);
-                    leaderBoardPanel = new LeaderBoardPanel();
                     Core.OverlayCanvas.Children.Add(leaderBoardPanel);
                     leaderBoardPanel.SetHitTestVisible();
                 }

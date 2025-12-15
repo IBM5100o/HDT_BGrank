@@ -1,21 +1,25 @@
-﻿using System;
+﻿using Hearthstone_Deck_Tracker;
+using Hearthstone_Deck_Tracker.Enums;
+using Hearthstone_Deck_Tracker.Utility.Extensions;
+using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Windows;
-using System.Windows.Input;
 using System.Windows.Controls;
-using Hearthstone_Deck_Tracker.API;
-using Hearthstone_Deck_Tracker.Utility.Extensions;
+using System.Windows.Input;
+using Core = Hearthstone_Deck_Tracker.API.Core;
 
 namespace HDT_BGrank
 {
     public partial class LeaderBoardPanel : UserControl, IDisposable
     {
+        public Dictionary<string, string> oppDict = new Dictionary<string, string>();
         private bool isFirst = true;
         private bool isChange = false;
-        private bool finished = false;
-        private bool isDragging = false;
+        private bool hidden = false;
         private Point originalGridPosition;
         private Point originalMousePosition;
+        public bool IsDragging { get; private set; }
 
         public LeaderBoardPanel()
         {
@@ -39,43 +43,59 @@ namespace HDT_BGrank
             OverlayExtensions.SetIsOverlayHitTestVisible(HiddenButton, true);
         }
 
-        public void OnUpdate(BGrank rank)
+        public void OnUpdate()
         {
             if (Core.Game.IsInMenu)
             {
                 Visibility = Visibility.Hidden;
-                finished = false;
             }
-            else if (!finished && rank.done)
+            else if (!hidden && oppDict.Count > 0)
             {
-                if (isFirst)
-                {
-                    double ratio = Math.Max(0.5, Math.Min(Core.OverlayWindow.Width/1920.0, 2.0));
-                    GridTransform.ScaleX = ratio;
-                    GridTransform.ScaleY = ratio;
-                    isFirst = false;
-                }
-
-                StringBuilder allText = new StringBuilder();
-                if (rank.failToGetData) { allText.Append("\nNo data now"); }
-                else
-                {
-                    foreach (var opp in rank.oppDict)
-                    {
-                        allText.Append($"\n{opp.Key} {opp.Value}");
-                    }
-                }
-                LeaderText.Text = allText.ToString();
-                finished = true;
                 Visibility = Visibility.Visible;
-                rank.ClearMemory();
-
-                SetPosition(LeaderGrid.Margin.Left, LeaderGrid.Margin.Top);
             }
+        }
+
+        public bool TryAddOpponent(string playerName, int? rank)
+        {
+            if (oppDict.ContainsKey(playerName))
+                return false;
+
+            var playerRank = rank?.ToString();
+            playerRank ??= (Core.Game.CurrentRegion == Region.CHINA ? "-" : "8000↓");
+
+            oppDict.Add(playerName, playerRank);
+            UpdateText();
+            return true;
+        }
+
+        public void UpdateText()
+        {
+            if (isFirst)
+            {
+                double ratio = Math.Max(0.5, Math.Min(Core.OverlayWindow.Width / 1920.0, 2.0));
+                GridTransform.ScaleX = ratio;
+                GridTransform.ScaleY = ratio;
+                SetPosition(LeaderGrid.Margin.Left, LeaderGrid.Margin.Top);
+                isFirst = false;
+            }
+
+            StringBuilder allText = new StringBuilder();
+            foreach (var opp in oppDict)
+            {
+                allText.Append($"\n{opp.Key} {opp.Value}");
+            }
+            
+            for (var i = oppDict.Count; i < 7; i ++)
+            {
+                allText.Append($"\n? ?");
+            }
+
+            LeaderText.Text = allText.ToString();
         }
 
         private void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
+            hidden = true;
             Visibility = Visibility.Hidden;
         }
 
@@ -93,24 +113,24 @@ namespace HDT_BGrank
 
         private void LeaderText_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            isDragging = true;
+            IsDragging = true;
             originalMousePosition = e.GetPosition(this);
             originalGridPosition = new Point(LeaderGrid.Margin.Left, LeaderGrid.Margin.Top);
         }
 
         private void LeaderText_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
-            isDragging = false;
+            IsDragging = false;
         }
 
         private void LeaderText_MouseLeave(object sender, MouseEventArgs e)
         {
-            isDragging = false;
+            IsDragging = false;
         }
 
         private void LeaderText_MouseMove(object sender, MouseEventArgs e)
         {
-            if (isDragging)
+            if (IsDragging)
             {
                 Point currentPosition = e.GetPosition(this);
                 double offsetX = currentPosition.X - originalMousePosition.X;
@@ -159,6 +179,12 @@ namespace HDT_BGrank
 
         public void Dispose()
         {
+        }
+
+        internal void Clear()
+        {
+            oppDict.Clear();
+            UpdateText();
         }
     }
 }
