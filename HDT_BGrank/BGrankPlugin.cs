@@ -34,41 +34,34 @@ namespace HDT_BGrank
 
         public void OnButtonPress()
         {
+            RemoveComponents();
+
             Settings.Instance.scaleRatio = 1.0;
             Settings.Instance.positionLeft = 0.0;
             Settings.Instance.positionTop = 0.0;
             Settings.Instance.ifLoad = false;
             Settings.Save();
 
-            if (rank != null)
-            {
-                rank = null;
-                Core.OverlayCanvas.Children.Remove(leaderBoardPanel);
-                leaderBoardPanel = null;
-
-                rank = new BGrank();
-                GameEvents.OnGameStart.Add(rank.OnGameStart);
-                GameEvents.OnTurnStart.Add(rank.OnTurnStart);
-                leaderBoardPanel = new LeaderBoardPanel();
-                Core.OverlayCanvas.Children.Add(leaderBoardPanel);
-                leaderBoardPanel.SetHitTestVisible();
-            }
+            CreateComponents();
         }
 
         public void OnLoad()
         {
+            FileLogger.Initialize(LogLevel.Info, 5);
             CreateMenuItem();
             MenuItem.IsChecked = true;
         }
 
         public void OnUnload()
         {
+            try { FileLogger.Instance.Dispose(); }
+            catch { /* ignore Dispose errors */ }
             MenuItem.IsChecked = false;
         }
 
         public void OnUpdate()
         {
-            if (rank != null) 
+            if (rank != null && leaderBoardPanel != null) 
             {
                 if ((DateTime.Now - lastUpdate).TotalSeconds >= 1) 
                 {
@@ -90,32 +83,49 @@ namespace HDT_BGrank
 
             MenuItem.Checked += (sender, args) =>
             {
-                if (rank == null)
-                {
-                    rank = new BGrank();
-                    GameEvents.OnGameStart.Add(rank.OnGameStart);
-                    GameEvents.OnTurnStart.Add(rank.OnTurnStart);
-                    leaderBoardPanel = new LeaderBoardPanel();
-                    Core.OverlayCanvas.Children.Add(leaderBoardPanel);
-                    leaderBoardPanel.SetHitTestVisible();
-                }
+                CreateComponents();
             };
 
             MenuItem.Unchecked += (sender, args) =>
             {
-                if (rank != null)
-                {
-                    rank = null;
-                    leaderBoardPanel.SaveSettings();
-                    Core.OverlayCanvas.Children.Remove(leaderBoardPanel);
-                    leaderBoardPanel = null;
-                }
+                RemoveComponents();
             };
+        }
+
+        private void CreateComponents()
+        {
+            if (rank == null)
+            {
+                rank = new BGrank();
+                GameEvents.OnGameStart.Add(rank.OnGameStart);
+                GameEvents.OnTurnStart.Add(rank.OnTurnStart);
+            }
+            if (leaderBoardPanel == null)
+            {
+                leaderBoardPanel = new LeaderBoardPanel();
+                Core.OverlayCanvas.Children.Add(leaderBoardPanel);
+                leaderBoardPanel.SetHitTestVisible();
+            }
+        }
+
+        private void RemoveComponents()
+        {
+            if (rank != null)
+            {
+                rank.ClearMemory();
+                rank = null;
+            }
+            if (leaderBoardPanel != null)
+            {
+                leaderBoardPanel.SaveSettings();
+                Core.OverlayCanvas.Children.Remove(leaderBoardPanel);
+                leaderBoardPanel = null;
+            }
         }
 
         public Version Version
         {
-            get { return new Version(1, 2, 8); }
+            get { return new Version(1, 2, 9); }
         }
 
     }

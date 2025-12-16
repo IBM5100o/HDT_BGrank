@@ -66,6 +66,7 @@
   <ItemGroup>
     <Compile Include="BGrank.cs" />
     <Compile Include="BGrankPlugin.cs" />
+    <Compile Include="FileLogger.cs" />
     <Compile Include="Mirror.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="LeaderBoardPanel.xaml.cs">

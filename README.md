@@ -42,7 +42,7 @@ If there is a bug, you can report it [here](https://github.com/IBM5100o/HDT_BGra
 
 And if you can provide the log file, it's helpful for me to fix the bug.  
 
-The log file is at: `%AppData%\HearthstoneDeckTracker\Logs`  
+The log file is at: `%AppData%\HearthstoneDeckTracker\BGrank`  
 
 # References  
 

@@ -8,7 +8,7 @@ using Hearthstone_Deck_Tracker.Utility.Extensions;
 
 namespace HDT_BGrank
 {
-    public partial class LeaderBoardPanel : UserControl, IDisposable
+    public partial class LeaderBoardPanel : UserControl
     {
         private bool isFirst = true;
         private bool isChange = false;
@@ -57,7 +57,7 @@ namespace HDT_BGrank
                 }
 
                 StringBuilder allText = new StringBuilder();
-                if (rank.failToGetData) { allText.Append("\nNo data now"); }
+                if (rank.failToGetData) { allText.Append("\nFailed to get leaderboard"); }
                 else
                 {
                     foreach (var opp in rank.oppDict)
@@ -155,10 +155,6 @@ namespace HDT_BGrank
             double newLeft = Math.Max(0.0, Math.Min(nowLeft, Core.OverlayWindow.Width - LeaderText.ActualWidth*GridTransform.ScaleX));
             double newTop = Math.Max(0.0, Math.Min(nowTop, Core.OverlayWindow.Height - LeaderText.ActualHeight*GridTransform.ScaleX));
             LeaderGrid.Margin = new Thickness(newLeft, newTop, 0.0, 0.0);
-        }
-
-        public void Dispose()
-        {
         }
     }
 }

@@ -1,7 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Linq;
 using System.Diagnostics;
-using System.Linq;
+using System.Collections.Generic;
 
 namespace HDT_BGrank
 {
@@ -46,10 +45,16 @@ namespace HDT_BGrank
 
         internal void Clean()
         {
+            try
+            {
+                _process?.Dispose();
+                _view?.Dispose();
+                _root?.Dispose();
+            }
+            catch { /* ignore dispose errors */ }
             _process = null;
             _view = null;
             _root = null;
-            GC.Collect();
         }
     }
 }

@@ -1,13 +1,13 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using HearthMirror;
 using Hearthstone_Deck_Tracker;
 using Hearthstone_Deck_Tracker.Enums;
-using Hearthstone_Deck_Tracker.Utility.Logging;
 
 namespace HDT_BGrank
 {
@@ -21,7 +21,10 @@ namespace HDT_BGrank
         private bool namesReady = false;
         private bool playersReady = false;
         private bool leaderBoardReady = false;
+        private int leaderBoardRequested = 0;
+        private int nameErrors = 0;
 
+        private readonly Mirror mirror;
         private readonly HttpClient client;
         private List<string> oppNames = null;
         private Dictionary<string, string> leaderBoard = null;
@@ -30,6 +33,8 @@ namespace HDT_BGrank
         {
             client = new HttpClient();
             client.DefaultRequestHeaders.Add("User-Agent", "User-Agent-Here");
+            client.Timeout = TimeSpan.FromSeconds(10);
+            mirror = new Mirror { ImageName = "Hearthstone" };
         }
 
         private void Reset()
@@ -39,6 +44,8 @@ namespace HDT_BGrank
             playersReady = false;
             failToGetData = false;
             leaderBoardReady = false;
+            leaderBoardRequested = 0;
+            nameErrors = 0;
             ClearMemory();
         }
 
@@ -47,16 +54,17 @@ namespace HDT_BGrank
             oppDict = null;
             oppNames = null;
             leaderBoard = null;
+            mirror.Clean();
         }
 
         public void OnGameStart()
         {
-            GetLeaderBoard();
+            _ = GetLeaderBoard();
         }
 
         public void OnTurnStart(ActivePlayer player)
         {
-            GetLeaderBoard();
+            _ = GetLeaderBoard();
             playersReady = true;
         }
 
@@ -77,13 +85,21 @@ namespace HDT_BGrank
                 else if (!namesReady) { GetOppNames(); }
                 else if (leaderBoardReady)
                 {
-                    Dictionary<string, int> unsortDict = new Dictionary<string, int>();
-                    oppDict = new Dictionary<string, string>();
+                    Dictionary<string, int> unsortDict = new Dictionary<string, int>(oppNames?.Count ?? 0);
+                    oppDict = new Dictionary<string, string>(oppNames?.Count ?? 0);
                     foreach (string name in oppNames)
                     {
                         if (leaderBoard.TryGetValue(name, out string value))
                         {
-                            unsortDict.Add(name, int.Parse(value));
+                            if (int.TryParse(value, out int rate))
+                            {
+                                unsortDict.Add(name, rate);
+                            }
+                            else
+                            {
+                                FileLogger.Instance.Warn($"Parse MMR failed (unexpected), set MMR as 0. player:'{name}' MMR:'{value}'");
+                                unsortDict.Add(name, 0);
+                            }
                         }
                         else
                         {
@@ -117,6 +133,8 @@ namespace HDT_BGrank
         {
             if (!Core.Game.IsBattlegroundsMatch || leaderBoardReady || failToGetData) { return; }
 
+            if (Interlocked.CompareExchange(ref leaderBoardRequested, 1, 0) != 0) { return; }
+
             // Get the leaderboard information from web, see https://github.com/IBM5100o/BGrank_bot
             leaderBoard = new Dictionary<string, string>();
             string region = GetRegionStr();
@@ -126,12 +144,12 @@ namespace HDT_BGrank
 
             if (Core.Game.IsBattlegroundsSoloMatch)
             {
-                path = Path.Combine(Config.AppDataPath, $"LeaderBoard_{region}.txt");
+                path = Path.Combine(Config.AppDataPath, "BGrank", $"LeaderBoard_{region}.txt");
                 url = $"https://bgrank.fly.dev/{region}/";
             }
             else
             {
-                path = Path.Combine(Config.AppDataPath, $"LeaderBoard_{region}_duo.txt");
+                path = Path.Combine(Config.AppDataPath, "BGrank", $"LeaderBoard_{region}_duo.txt");
                 url = $"https://bgrank.fly.dev/{region}_duo/";
             }
 
@@ -140,11 +158,11 @@ namespace HDT_BGrank
                 num_tries++;
                 try
                 {
-                    Log.Info($"Try to get the leaderboard from {url} (try {num_tries}/{max_tries})");
-                    string response = await client.GetStringAsync(url);
-                    if (string.IsNullOrEmpty(response))
+                    FileLogger.Instance.Info($"Try to get the leaderboard from {url} (try {num_tries}/{max_tries})");
+                    string response = await client.GetStringAsync(url).ConfigureAwait(false);
+                    if (string.IsNullOrWhiteSpace(response))
                     {
-                        if (num_tries < max_tries) { await Task.Delay(10000); }
+                        if (num_tries < max_tries) { await Task.Delay(5000); }
                         continue;
                     }
 
@@ -157,34 +175,43 @@ namespace HDT_BGrank
                         {
                             string name = tmp[0];
                             string rating = tmp[1];
-                            if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(rating)) { continue; }
+                            if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(rating)) { continue; }
                             if (!leaderBoard.ContainsKey(name)) { leaderBoard.Add(name, rating); }
                         }
                     }
-
-                    if (leaderBoard.Count != 0)
+                    if (leaderBoard.Count != 0) 
                     {
-                        Log.Info("Success to get the leaderboard from web!");
+                        FileLogger.Instance.Info($"Success to get the leaderboard from {url}");
                         leaderBoardReady = true;
-                        using (StreamWriter writer = new StreamWriter(path))
+                    }
+                }
+                catch (Exception ex)
+                {
+                    FileLogger.Instance.Error($"Failed to get the leaderboard from {url}", ex);
+                    if (num_tries < max_tries) { await Task.Delay(5000); }
+                }
+            }
+
+            if (leaderBoardReady)
+            {
+                try
+                {
+                    using (StreamWriter writer = new StreamWriter(path))
+                    {
+                        foreach (var player in leaderBoard)
                         {
-                            foreach (var player in leaderBoard)
-                            {
-                                writer.WriteLine($"{player.Key} {player.Value}");
-                            }
+                            writer.WriteLine($"{player.Key} {player.Value}");
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex);
-                    if (num_tries < max_tries) { await Task.Delay(10000); }
+                    FileLogger.Instance.Error("Failed to save the leaderboard to local", ex);
                 }
             }
-
-            if (!leaderBoardReady) 
+            else
             {
-                Log.Info("Fail to get the leaderboard from web, try to get it from local...");
+                FileLogger.Instance.Info("Failed to get the leaderboard from web, try to get it from local...");
                 if (File.Exists(path))
                 {
                     try
@@ -198,25 +225,26 @@ namespace HDT_BGrank
                                 leaderBoard.Add(tmp[0], tmp[1]);
                             }
                         }
-                        if (leaderBoard.Count != 0) 
+                        if (leaderBoard.Count != 0)
                         {
-                            Log.Info("Success to get the leaderboard from local!");
+                            FileLogger.Instance.Info("Success to get the leaderboard from local!");
                             leaderBoardReady = true;
                         }
                         else { failToGetData = true; }
                     }
                     catch (Exception ex)
                     {
-                        Log.Error(ex);
+                        FileLogger.Instance.Error("Failed to read the local file", ex);
                         failToGetData = true;
                     }
                 }
                 else
                 {
+                    FileLogger.Instance.Info("Local file not exist");
                     failToGetData = true;
                 }
             }
-            if (failToGetData) { Log.Info("Fail to get the leaderboard from local, no data for this match"); }
+            if (failToGetData) { FileLogger.Instance.Info("Failed to get the leaderboard, no data for this match"); }
         }
 
         private string GetRegionStr()
@@ -242,21 +270,20 @@ namespace HDT_BGrank
             try
             {
                 string myName = Reflection.Client?.GetBattleTag()?.Name;
-                if (string.IsNullOrEmpty(myName)) { return; }
-                Mirror mirror = new Mirror { ImageName = "Hearthstone" };
+                if (string.IsNullOrWhiteSpace(myName)) { return; }
                 var leaderboardMgr = mirror.Root?["PlayerLeaderboardManager"]?["s_instance"];
                 if (leaderboardMgr == null) { return; }
                 dynamic[] playerTiles = GetPlayerTiles(leaderboardMgr);
-                var numberOfPlayerTiles = playerTiles?.Length ?? 0;
+                int numberOfPlayerTiles = playerTiles?.Length ?? 0;
                 if (numberOfPlayerTiles == 0) { return; }
-                List<string> tmpNames = new List<string>();
+                List<string> tmpNames = new List<string>(numberOfPlayerTiles);
 
                 for (int i = 0; i < numberOfPlayerTiles; i++)
                 {
                     var playerTile = playerTiles[i];
                     // Info not available until the player mouses over the tile in the leaderboard, and there is no other way to get it
                     string playerName = playerTile["m_overlay"]?["m_heroActor"]?["m_playerNameText"]?["m_Text"];
-                    if (string.IsNullOrEmpty(playerName)) { return; }
+                    if (string.IsNullOrWhiteSpace(playerName)) { return; }
                     if (playerName != myName && !tmpNames.Contains(playerName)) { tmpNames.Add(playerName); }
                 }
 
@@ -272,9 +299,17 @@ namespace HDT_BGrank
                 oppNames = new List<string>(tmpNames);
                 namesReady = true;
             }
-            catch (Exception ex) 
+            catch (Exception ex)
             {
-                Log.Error(ex);
+                nameErrors++;
+                if (nameErrors < 5)
+                {
+                    FileLogger.Instance.Error("Fail to get opponent name", ex);
+                }
+                else if (nameErrors == 5)
+                {
+                    FileLogger.Instance.Error("Fail to get opponent name, further errors will be suppressed", ex);
+                }
             }
         }
 
