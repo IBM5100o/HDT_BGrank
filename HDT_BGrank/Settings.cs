@@ -52,5 +52,11 @@ namespace HDT_BGrank
                 FileLogger.Instance.Error("Failed to save settings", ex);
             }
         }
+
+        public static void Reset()
+        {
+            _settings = new Settings();
+            Save();
+        }
     }
 }

@@ -34,15 +34,12 @@ namespace HDT_BGrank
 
         public void OnButtonPress()
         {
-            RemoveComponents();
-
-            Settings.Instance.scaleRatio = 1.0;
-            Settings.Instance.positionLeft = 0.0;
-            Settings.Instance.positionTop = 0.0;
-            Settings.Instance.ifLoad = false;
-            Settings.Save();
-
-            CreateComponents();
+            Settings.Reset();
+            if (MenuItem.IsChecked) 
+            {
+                RemoveComponents(false); // Reset, do not save settings
+                CreateComponents();
+            }
         }
 
         public void OnLoad()
@@ -54,9 +51,9 @@ namespace HDT_BGrank
 
         public void OnUnload()
         {
+            MenuItem.IsChecked = false;
             try { FileLogger.Instance.Dispose(); }
             catch { /* ignore Dispose errors */ }
-            MenuItem.IsChecked = false;
         }
 
         public void OnUpdate()
@@ -108,7 +105,7 @@ namespace HDT_BGrank
             }
         }
 
-        private void RemoveComponents()
+        private void RemoveComponents(bool save = true)
         {
             if (rank != null)
             {
@@ -117,7 +114,7 @@ namespace HDT_BGrank
             }
             if (leaderBoardPanel != null)
             {
-                leaderBoardPanel.SaveSettings();
+                if (save) { leaderBoardPanel.SaveSettings(); }
                 Core.OverlayCanvas.Children.Remove(leaderBoardPanel);
                 leaderBoardPanel = null;
             }
@@ -125,7 +122,7 @@ namespace HDT_BGrank
 
         public Version Version
         {
-            get { return new Version(1, 2, 9); }
+            get { return new Version(1, 3, 0); }
         }
 
     }
