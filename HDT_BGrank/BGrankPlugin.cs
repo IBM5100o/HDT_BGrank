@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Windows.Controls;
-using Hearthstone_Deck_Tracker.API;
 using Hearthstone_Deck_Tracker.Plugins;
 
 namespace HDT_BGrank
@@ -9,7 +8,6 @@ namespace HDT_BGrank
     {
         public MenuItem MenuItem { get; private set; }
         private BGrank rank = null;
-        private LeaderBoardPanel leaderBoardPanel = null;
         private DateTime lastUpdate = DateTime.Now;
 
         public string Author
@@ -52,19 +50,18 @@ namespace HDT_BGrank
         public void OnUnload()
         {
             MenuItem.IsChecked = false;
-            try { FileLogger.Instance.Dispose(); }
+            try { FileLogger.Instance.Clean(); }
             catch { /* ignore Dispose errors */ }
         }
 
         public void OnUpdate()
         {
-            if (rank != null && leaderBoardPanel != null) 
+            if (rank != null) 
             {
                 if ((DateTime.Now - lastUpdate).TotalSeconds >= 1) 
                 {
-                    rank.OnUpdate();
-                    leaderBoardPanel.OnUpdate(rank);
                     lastUpdate = DateTime.Now;
+                    rank.OnUpdate();
                 }
             }
         }
@@ -94,14 +91,6 @@ namespace HDT_BGrank
             if (rank == null)
             {
                 rank = new BGrank();
-                GameEvents.OnGameStart.Add(rank.OnGameStart);
-                GameEvents.OnTurnStart.Add(rank.OnTurnStart);
-            }
-            if (leaderBoardPanel == null)
-            {
-                leaderBoardPanel = new LeaderBoardPanel();
-                Core.OverlayCanvas.Children.Add(leaderBoardPanel);
-                leaderBoardPanel.SetHitTestVisible();
             }
         }
 
@@ -109,20 +98,14 @@ namespace HDT_BGrank
         {
             if (rank != null)
             {
-                rank.ClearMemory();
+                rank.Clean(save);
                 rank = null;
-            }
-            if (leaderBoardPanel != null)
-            {
-                if (save) { leaderBoardPanel.SaveSettings(); }
-                Core.OverlayCanvas.Children.Remove(leaderBoardPanel);
-                leaderBoardPanel = null;
             }
         }
 
         public Version Version
         {
-            get { return new Version(1, 3, 0); }
+            get { return new Version(1, 3, 1); }
         }
 
     }

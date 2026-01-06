@@ -32,8 +32,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="HearthMirror, Version=28.6.2.0, Culture=neutral, processorArchitecture=x86">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="HearthMirror">
       <HintPath>Reference\HearthMirror.dll</HintPath>
       <Private>False</Private>
     </Reference>
@@ -56,8 +55,7 @@
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xaml" />
     <Reference Include="System.Xml" />
-    <Reference Include="untapped-scry-dotnet, Version=5.11.1.0, Culture=neutral, processorArchitecture=x86">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="untapped-scry-dotnet">
       <HintPath>Reference\untapped-scry-dotnet.dll</HintPath>
       <Private>False</Private>
     </Reference>

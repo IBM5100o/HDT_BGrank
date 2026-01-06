@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
-using System.Threading;
+using System.Windows;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Collections.Generic;
@@ -13,62 +13,56 @@ namespace HDT_BGrank
 {
     public class BGrank
     {
-        public bool done = false;
-        public bool failToGetData = false;
-        public Dictionary<string, string> oppDict = null;
-
         private bool isReset = true;
-        private bool namesReady = false;
-        private bool playersReady = false;
+        private bool done = false;
+        private bool failToGetData = false;
         private bool leaderBoardReady = false;
-        private int leaderBoardRequested = 0;
         private int nameErrors = 0;
 
-        private readonly Mirror mirror;
-        private readonly HttpClient client;
         private List<string> oppNames = null;
         private Dictionary<string, string> leaderBoard = null;
+
+        private Mirror mirror;
+        private HttpClient client;
+        private LeaderBoardPanel leaderBoardPanel;
 
         public BGrank()
         {
             client = new HttpClient();
             client.DefaultRequestHeaders.Add("User-Agent", "User-Agent-Here");
-            client.Timeout = TimeSpan.FromSeconds(10);
+            client.Timeout = TimeSpan.FromSeconds(15);
             mirror = new Mirror { ImageName = "Hearthstone" };
+            leaderBoardPanel = new LeaderBoardPanel();
+        }
+
+        public void Clean(bool save)
+        {
+            ClearMemory();
+            client.Dispose();
+            leaderBoardPanel.Clean(save);
+            client = null;
+            mirror = null;
+            leaderBoardPanel = null;
         }
 
         private void Reset()
         {
             done = false;
-            namesReady = false;
-            playersReady = false;
             failToGetData = false;
             leaderBoardReady = false;
-            leaderBoardRequested = 0;
             nameErrors = 0;
             ClearMemory();
+            leaderBoardPanel.Visibility = Visibility.Hidden;
         }
 
-        public void ClearMemory()
+        private void ClearMemory()
         {
-            oppDict = null;
             oppNames = null;
             leaderBoard = null;
             mirror.Clean();
         }
 
-        public void OnGameStart()
-        {
-            _ = GetLeaderBoard();
-        }
-
-        public void OnTurnStart(ActivePlayer player)
-        {
-            _ = GetLeaderBoard();
-            playersReady = true;
-        }
-
-        public void OnUpdate() 
+        public void OnUpdate()
         {
             if (Core.Game.IsInMenu)
             {
@@ -78,63 +72,76 @@ namespace HDT_BGrank
                     isReset = true;
                 }
             }
-            else if (!done && Core.Game.IsBattlegroundsMatch)
+            else if (Core.Game.IsBattlegroundsMatch)
             {
-                isReset = false;
-                if (failToGetData) { done = true; }
-                else if (!namesReady) { GetOppNames(); }
+                if (isReset)
+                {
+                    Reset(); // Reset again, just in case
+                    isReset = false;
+                    _ = GetLeaderBoard();
+                }
+
+                if (done || !Core.Game.IsBattlegroundsHeroPickingDone) { return; }
+
+                if (failToGetData)
+                {
+                    leaderBoardPanel.DisplayResult("\nFailed to get leaderboard");
+                    ClearMemory();
+                    done = true;
+                }
                 else if (leaderBoardReady)
                 {
-                    Dictionary<string, int> unsortDict = new Dictionary<string, int>(oppNames?.Count ?? 0);
-                    oppDict = new Dictionary<string, string>(oppNames?.Count ?? 0);
-                    foreach (string name in oppNames)
+                    if (TryGetOppNames())
                     {
-                        if (leaderBoard.TryGetValue(name, out string value))
+                        string resultText = string.Empty;
+                        Dictionary<string, int> unsortDict = new Dictionary<string, int>();
+                        foreach (string name in oppNames)
                         {
-                            if (int.TryParse(value, out int rate))
+                            if (leaderBoard.TryGetValue(name, out string value))
                             {
-                                unsortDict.Add(name, rate);
+                                if (int.TryParse(value, out int rate))
+                                {
+                                    unsortDict.Add(name, rate);
+                                }
+                                else
+                                {
+                                    FileLogger.Instance.Warn($"Parse MMR failed, set MMR as 0. player:'{name}' MMR:'{value}'");
+                                    unsortDict.Add(name, 0);
+                                }
                             }
                             else
                             {
-                                FileLogger.Instance.Warn($"Parse MMR failed (unexpected), set MMR as 0. player:'{name}' MMR:'{value}'");
                                 unsortDict.Add(name, 0);
                             }
                         }
-                        else
+                        foreach (var opp in unsortDict.OrderBy(x => x.Value))
                         {
-                            unsortDict.Add(name, 0);
-                        }
-                    }
-                    foreach (var opp in unsortDict.OrderBy(x => x.Value))
-                    {
-                        if (opp.Value == 0)
-                        {
-                            if (Core.Game.CurrentRegion == Region.CHINA)
+                            if (opp.Value == 0)
                             {
-                                oppDict.Add(opp.Key, "-");
+                                if (Core.Game.CurrentRegion == Region.CHINA)
+                                {
+                                    resultText += $"\n{opp.Key} -";
+                                }
+                                else
+                                {
+                                    resultText += $"\n{opp.Key} 8000↓";
+                                }
                             }
                             else
                             {
-                                oppDict.Add(opp.Key, "8000↓");
+                                resultText += $"\n{opp.Key} {opp.Value}";
                             }
                         }
-                        else
-                        {
-                            oppDict.Add(opp.Key, opp.Value.ToString());
-                        }
+                        leaderBoardPanel.DisplayResult(resultText);
+                        ClearMemory();
+                        done = true;
                     }
-                    done = true;
                 }
             }
         }
 
         private async Task GetLeaderBoard()
         {
-            if (!Core.Game.IsBattlegroundsMatch || leaderBoardReady || failToGetData) { return; }
-
-            if (Interlocked.CompareExchange(ref leaderBoardRequested, 1, 0) != 0) { return; }
-
             // Get the leaderboard information from web, see https://github.com/IBM5100o/BGrank_bot
             leaderBoard = new Dictionary<string, string>();
             string region = GetRegionStr();
@@ -159,7 +166,7 @@ namespace HDT_BGrank
                 try
                 {
                     FileLogger.Instance.Info($"Try to get the leaderboard from {url} (try {num_tries}/{max_tries})");
-                    string response = await client.GetStringAsync(url).ConfigureAwait(false);
+                    string response = await client.GetStringAsync(url);
                     if (string.IsNullOrWhiteSpace(response))
                     {
                         if (num_tries < max_tries) { await Task.Delay(5000); }
@@ -262,28 +269,26 @@ namespace HDT_BGrank
             }
         }
 
-        private void GetOppNames()
+        private bool TryGetOppNames()
         {
-            if (!playersReady) { return; }
-
             // The code below is from: https://github.com/Zero-to-Heroes/unity-spy-.net4.5
             try
             {
                 string myName = Reflection.Client?.GetBattleTag()?.Name;
-                if (string.IsNullOrWhiteSpace(myName)) { return; }
+                if (string.IsNullOrWhiteSpace(myName)) { return false; }
                 var leaderboardMgr = mirror.Root?["PlayerLeaderboardManager"]?["s_instance"];
-                if (leaderboardMgr == null) { return; }
+                if (leaderboardMgr == null) { return false; }
                 dynamic[] playerTiles = GetPlayerTiles(leaderboardMgr);
                 int numberOfPlayerTiles = playerTiles?.Length ?? 0;
-                if (numberOfPlayerTiles == 0) { return; }
-                List<string> tmpNames = new List<string>(numberOfPlayerTiles);
+                if (numberOfPlayerTiles == 0) { return false; }
+                List<string> tmpNames = new List<string>();
 
                 for (int i = 0; i < numberOfPlayerTiles; i++)
                 {
                     var playerTile = playerTiles[i];
                     // Info not available until the player mouses over the tile in the leaderboard, and there is no other way to get it
                     string playerName = playerTile["m_overlay"]?["m_heroActor"]?["m_playerNameText"]?["m_Text"];
-                    if (string.IsNullOrWhiteSpace(playerName)) { return; }
+                    if (string.IsNullOrWhiteSpace(playerName)) { return false; }
                     if (playerName != myName && !tmpNames.Contains(playerName)) { tmpNames.Add(playerName); }
                 }
 
@@ -297,7 +302,7 @@ namespace HDT_BGrank
                     }
                 }
                 oppNames = new List<string>(tmpNames);
-                namesReady = true;
+                return true;
             }
             catch (Exception ex)
             {
@@ -310,6 +315,7 @@ namespace HDT_BGrank
                 {
                     FileLogger.Instance.Error("Fail to get opponent name, further errors will be suppressed", ex);
                 }
+                return false;
             }
         }
 

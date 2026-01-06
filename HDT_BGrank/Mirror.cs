@@ -1,16 +1,15 @@
-﻿using System.Linq;
+﻿using ScryDotNet;
+using System.Linq;
 using System.Diagnostics;
 using System.Collections.Generic;
 
 namespace HDT_BGrank
 {
-    internal class Mirror
+    public class Mirror
     {
         private Process _process;
-
-        private ScryDotNet.MonoScry _view;
-
-        private ScryDotNet.MonoImage _root;
+        private MonoScry _view;
+        private MonoImage _root;
 
         public string ImageName { get; set; }
 
@@ -18,7 +17,7 @@ namespace HDT_BGrank
 
         public Process Proc => _process ?? (_process = Process.GetProcessesByName(ImageName).FirstOrDefault());
 
-        public ScryDotNet.MonoScry View
+        public MonoScry View
         {
             get
             {
@@ -26,11 +25,11 @@ namespace HDT_BGrank
                 {
                     return null;
                 }
-                return _view ?? (_view = new ScryDotNet.MonoScry(ScryDotNet.Scry.connect(Proc.Id)));
+                return _view ?? (_view = new MonoScry(Scry.connect(Proc.Id)));
             }
         }
 
-        public ScryDotNet.MonoImage Root
+        public MonoImage Root
         {
             get
             {
@@ -43,7 +42,7 @@ namespace HDT_BGrank
             }
         }
 
-        internal void Clean()
+        public void Clean()
         {
             try
             {

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Text;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Controls;
@@ -12,7 +11,6 @@ namespace HDT_BGrank
     {
         private bool isFirst = true;
         private bool isChange = false;
-        private bool finished = false;
         private bool isDragging = false;
         private Point originalGridPosition;
         private Point originalMousePosition;
@@ -21,7 +19,6 @@ namespace HDT_BGrank
         {
             InitializeComponent();
             Visibility = Visibility.Hidden;
-
             Settings.Load();
             if (Settings.Instance.ifLoad)
             {
@@ -30,48 +27,38 @@ namespace HDT_BGrank
                 LeaderGrid.Margin = new Thickness(Settings.Instance.positionLeft, Settings.Instance.positionTop, 0.0, 0.0);
                 isFirst = false;
             }
-        }
-
-        public void SetHitTestVisible()
-        {
+            Core.OverlayCanvas.Children.Add(this);
             OverlayExtensions.SetIsOverlayHitTestVisible(LeaderText, true);
             OverlayExtensions.SetIsOverlayHitTestVisible(DeleteButton, true);
             OverlayExtensions.SetIsOverlayHitTestVisible(HiddenButton, true);
         }
 
-        public void OnUpdate(BGrank rank)
+        public void DisplayResult(string text)
         {
-            if (Core.Game.IsInMenu)
+            if (isFirst)
             {
-                Visibility = Visibility.Hidden;
-                finished = false;
+                double ratio = Math.Max(0.5, Math.Min(Core.OverlayWindow.Width / 1920.0, 2.0));
+                GridTransform.ScaleX = ratio;
+                GridTransform.ScaleY = ratio;
+                isFirst = false;
             }
-            else if (!finished && rank.done)
+
+            LeaderText.Text = text;
+            Visibility = Visibility.Visible;
+            SetPosition(LeaderGrid.Margin.Left, LeaderGrid.Margin.Top);
+        }
+
+        public void Clean(bool save)
+        {
+            if (save && isChange)
             {
-                if (isFirst)
-                {
-                    double ratio = Math.Max(0.5, Math.Min(Core.OverlayWindow.Width/1920.0, 2.0));
-                    GridTransform.ScaleX = ratio;
-                    GridTransform.ScaleY = ratio;
-                    isFirst = false;
-                }
-
-                StringBuilder allText = new StringBuilder();
-                if (rank.failToGetData) { allText.Append("\nFailed to get leaderboard"); }
-                else
-                {
-                    foreach (var opp in rank.oppDict)
-                    {
-                        allText.Append($"\n{opp.Key} {opp.Value}");
-                    }
-                }
-                LeaderText.Text = allText.ToString();
-                finished = true;
-                Visibility = Visibility.Visible;
-                rank.ClearMemory();
-
-                SetPosition(LeaderGrid.Margin.Left, LeaderGrid.Margin.Top);
+                Settings.Instance.scaleRatio = GridTransform.ScaleX;
+                Settings.Instance.positionLeft = LeaderGrid.Margin.Left;
+                Settings.Instance.positionTop = LeaderGrid.Margin.Top;
+                Settings.Instance.ifLoad = true;
+                Settings.Save();
             }
+            Core.OverlayCanvas.Children.Remove(this);
         }
 
         private void DeleteButton_Click(object sender, RoutedEventArgs e)
@@ -136,18 +123,6 @@ namespace HDT_BGrank
             GridTransform.ScaleX = newRatio;
             GridTransform.ScaleY = newRatio;
             isChange = true;
-        }
-
-        public void SaveSettings()
-        {
-            if (isChange)
-            {
-                Settings.Instance.scaleRatio = GridTransform.ScaleX;
-                Settings.Instance.positionLeft = LeaderGrid.Margin.Left;
-                Settings.Instance.positionTop = LeaderGrid.Margin.Top;
-                Settings.Instance.ifLoad = true;
-                Settings.Save();
-            }
         }
 
         private void SetPosition(double nowLeft, double nowTop)
