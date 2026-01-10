@@ -15,7 +15,7 @@ namespace HDT_BGrank
 
         public bool Active => _process != null;
 
-        public Process Proc => _process ?? (_process = Process.GetProcessesByName(ImageName).FirstOrDefault());
+        public Process Proc => _process ??= Process.GetProcessesByName(ImageName).FirstOrDefault();
 
         public MonoScry View
         {
@@ -25,7 +25,7 @@ namespace HDT_BGrank
                 {
                     return null;
                 }
-                return _view ?? (_view = new MonoScry(Scry.connect(Proc.Id)));
+                return _view ??= new MonoScry(Scry.connect(Proc.Id));
             }
         }
 

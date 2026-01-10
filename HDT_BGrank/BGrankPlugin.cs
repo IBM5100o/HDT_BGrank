@@ -50,8 +50,7 @@ namespace HDT_BGrank
         public void OnUnload()
         {
             MenuItem.IsChecked = false;
-            try { FileLogger.Instance.Clean(); }
-            catch { /* ignore Dispose errors */ }
+            FileLogger.Instance.Clean();
         }
 
         public void OnUpdate()
@@ -88,10 +87,7 @@ namespace HDT_BGrank
 
         private void CreateComponents()
         {
-            if (rank == null)
-            {
-                rank = new BGrank();
-            }
+            rank ??= new BGrank();
         }
 
         private void RemoveComponents(bool save = true)
@@ -105,7 +101,7 @@ namespace HDT_BGrank
 
         public Version Version
         {
-            get { return new Version(1, 3, 1); }
+            get { return new Version(1, 3, 2); }
         }
 
     }

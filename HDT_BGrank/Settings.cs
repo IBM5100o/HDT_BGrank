@@ -11,18 +11,8 @@ namespace HDT_BGrank
         public double positionLeft = 0.0;
         public double positionTop = 0.0;
         private static Settings _settings;
-        
-        public static Settings Instance
-        {
-            get
-            {
-                if (_settings == null)
-                {
-                    _settings = new Settings();
-                }
-                return _settings;
-            }
-        }
+
+        public static Settings Instance => _settings ??= new Settings();
 
         public static void Load()
         {

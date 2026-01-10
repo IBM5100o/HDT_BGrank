@@ -128,28 +128,19 @@ namespace HDT_BGrank
             try
             {
                 RotateIfNeeded();
-                var line = new StringBuilder();
-                var ts = DateTime.Now.ToString("yyyy'-'MM'-'dd '|' HH':'mm':'ss", CultureInfo.InvariantCulture);
+                string logText = string.Empty;
+                string nowTime = DateTime.Now.ToString("yyyy'-'MM'-'dd '|' HH':'mm':'ss", CultureInfo.InvariantCulture);
 
-                line.Append($"[{ts}] [{level.ToString().ToUpperInvariant()}] {message}");
+                logText += $"[{nowTime}] [{level.ToString().ToUpperInvariant()}] {message}";
                 if (ex != null)
                 {
-                    line.Append($" | Exception: {ex.GetType().FullName} - {ex.Message}");
+                    logText += $" | Exception: {ex.GetType().FullName} - {ex.Message}";
                     if (ex.StackTrace != null)
                     {
-                        line.AppendLine();
-                        line.Append(ex.StackTrace);
+                        logText += $"\n{ex.StackTrace}";
                     }
                 }
-
-                try
-                {
-                    _writer?.WriteLine(line.ToString());
-                }
-                catch
-                {
-                    // If writer fails, swallow to avoid throwing from logger
-                }
+                _writer?.WriteLine(logText);
             }
             catch
             {

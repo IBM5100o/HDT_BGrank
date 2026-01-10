@@ -85,7 +85,7 @@ namespace HDT_BGrank
 
                 if (failToGetData)
                 {
-                    leaderBoardPanel.DisplayResult("\nFailed to get leaderboard");
+                    leaderBoardPanel.DisplayResult("\nFailed to get leaderboard\nCheck log for details");
                     ClearMemory();
                     done = true;
                 }
@@ -93,6 +93,7 @@ namespace HDT_BGrank
                 {
                     if (TryGetOppNames())
                     {
+                        string region = GetRegionStr();
                         string resultText = string.Empty;
                         Dictionary<string, int> unsortDict = new Dictionary<string, int>();
                         foreach (string name in oppNames)
@@ -118,7 +119,7 @@ namespace HDT_BGrank
                         {
                             if (opp.Value == 0)
                             {
-                                if (Core.Game.CurrentRegion == Region.CHINA)
+                                if (region == "CN")
                                 {
                                     resultText += $"\n{opp.Key} -";
                                 }
@@ -143,8 +144,15 @@ namespace HDT_BGrank
         private async Task GetLeaderBoard()
         {
             // Get the leaderboard information from web, see https://github.com/IBM5100o/BGrank_bot
-            leaderBoard = new Dictionary<string, string>();
             string region = GetRegionStr();
+            if (region == "UNKNOWN")
+            {
+                FileLogger.Instance.Warn("Failed to get your server region, no data for this match");
+                failToGetData = true;
+                return;
+            }
+
+            leaderBoard = new Dictionary<string, string>();
             string path, url;
             int num_tries = 0;
             int max_tries = 3;
@@ -203,12 +211,10 @@ namespace HDT_BGrank
             {
                 try
                 {
-                    using (StreamWriter writer = new StreamWriter(path))
+                    using StreamWriter writer = new StreamWriter(path);
+                    foreach (var player in leaderBoard)
                     {
-                        foreach (var player in leaderBoard)
-                        {
-                            writer.WriteLine($"{player.Key} {player.Value}");
-                        }
+                        writer.WriteLine($"{player.Key} {player.Value}");
                     }
                 }
                 catch (Exception ex)
@@ -223,14 +229,12 @@ namespace HDT_BGrank
                 {
                     try
                     {
-                        using (StreamReader reader = new StreamReader(path))
+                        string line;
+                        using StreamReader reader = new StreamReader(path);
+                        while ((line = reader.ReadLine()) != null)
                         {
-                            string line;
-                            while ((line = reader.ReadLine()) != null)
-                            {
-                                string[] tmp = line.Split(' ');
-                                leaderBoard.Add(tmp[0], tmp[1]);
-                            }
+                            string[] tmp = line.Split(' ');
+                            leaderBoard.Add(tmp[0], tmp[1]);
                         }
                         if (leaderBoard.Count != 0)
                         {
@@ -247,26 +251,23 @@ namespace HDT_BGrank
                 }
                 else
                 {
-                    FileLogger.Instance.Info("Local file not exist");
+                    FileLogger.Instance.Warn("Local file not exist");
                     failToGetData = true;
                 }
             }
-            if (failToGetData) { FileLogger.Instance.Info("Failed to get the leaderboard, no data for this match"); }
+            if (failToGetData) { FileLogger.Instance.Warn("Failed to get the leaderboard, no data for this match"); }
         }
 
         private string GetRegionStr()
         {
-            switch (Core.Game.CurrentRegion)
+            return Core.Game.CurrentRegion switch
             {
-                case Region.US:
-                    return "US";
-                case Region.EU:
-                    return "EU";
-                case Region.CHINA:
-                    return "CN";
-                default:
-                    return "AP";
-            }
+                Region.US => "US",
+                Region.EU => "EU",
+                Region.ASIA => "AP",
+                Region.CHINA => "CN",
+                _ => "UNKNOWN",
+            };
         }
 
         private bool TryGetOppNames()
