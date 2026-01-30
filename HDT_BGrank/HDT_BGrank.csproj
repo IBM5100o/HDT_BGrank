@@ -32,10 +32,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="HearthMirror">
-      <HintPath>Reference\HearthMirror.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="HearthstoneDeckTracker">
       <HintPath>Reference\HearthstoneDeckTracker.exe</HintPath>
       <Private>False</Private>

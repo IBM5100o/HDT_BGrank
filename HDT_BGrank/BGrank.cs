@@ -5,7 +5,6 @@ using System.Windows;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Collections.Generic;
-using HearthMirror;
 using Hearthstone_Deck_Tracker;
 using Hearthstone_Deck_Tracker.Enums;
 
@@ -31,7 +30,7 @@ namespace HDT_BGrank
             client = new HttpClient();
             client.DefaultRequestHeaders.Add("User-Agent", "User-Agent-Here");
             client.Timeout = TimeSpan.FromSeconds(15);
-            mirror = new Mirror { ImageName = "Hearthstone" };
+            mirror = new Mirror();
             leaderBoardPanel = new LeaderBoardPanel();
         }
 
@@ -81,11 +80,11 @@ namespace HDT_BGrank
                     _ = GetLeaderBoard();
                 }
 
-                if (done || !Core.Game.IsBattlegroundsHeroPickingDone) { return; }
+                if (done || Core.Game.GetTurnNumber() == 0) { return; }
 
                 if (failToGetData)
                 {
-                    leaderBoardPanel.DisplayResult("\nFailed to get leaderboard\nCheck log for details");
+                    leaderBoardPanel.DisplayResult("\nFail to get data\nCheck log for details");
                     ClearMemory();
                     done = true;
                 }
@@ -194,7 +193,7 @@ namespace HDT_BGrank
                             if (!leaderBoard.ContainsKey(name)) { leaderBoard.Add(name, rating); }
                         }
                     }
-                    if (leaderBoard.Count != 0) 
+                    if (leaderBoard.Count != 0)
                     {
                         FileLogger.Instance.Info($"Success to get the leaderboard from {url}");
                         leaderBoardReady = true;
@@ -266,18 +265,17 @@ namespace HDT_BGrank
                 Region.EU => "EU",
                 Region.ASIA => "AP",
                 Region.CHINA => "CN",
-                _ => "UNKNOWN",
+                _ => "UNKNOWN"
             };
         }
 
         private bool TryGetOppNames()
         {
-            // The code below is from: https://github.com/Zero-to-Heroes/unity-spy-.net4.5
             try
             {
-                string myName = Reflection.Client?.GetBattleTag()?.Name;
+                string myName = mirror.MyName;
                 if (string.IsNullOrWhiteSpace(myName)) { return false; }
-                var leaderboardMgr = mirror.Root?["PlayerLeaderboardManager"]?["s_instance"];
+                dynamic leaderboardMgr = mirror.Root?["PlayerLeaderboardManager"]?["s_instance"];
                 if (leaderboardMgr == null) { return false; }
                 dynamic[] playerTiles = GetPlayerTiles(leaderboardMgr);
                 int numberOfPlayerTiles = playerTiles?.Length ?? 0;
@@ -286,22 +284,18 @@ namespace HDT_BGrank
 
                 for (int i = 0; i < numberOfPlayerTiles; i++)
                 {
-                    var playerTile = playerTiles[i];
+                    dynamic playerTile = playerTiles[i];
                     // Info not available until the player mouses over the tile in the leaderboard, and there is no other way to get it
-                    string playerName = playerTile["m_overlay"]?["m_heroActor"]?["m_playerNameText"]?["m_Text"];
+                    string playerName = playerTile?["m_overlay"]?["m_heroActor"]?["m_playerNameText"]?["m_Text"];
                     if (string.IsNullOrWhiteSpace(playerName)) { return false; }
+
+                    // For those who use the BattleTag MOD
+                    int index = playerName.IndexOf('#');
+                    if (index > 0) { playerName = playerName.Substring(0, index); }
+
                     if (playerName != myName && !tmpNames.Contains(playerName)) { tmpNames.Add(playerName); }
                 }
 
-                // For those who use the BattleTag MOD
-                for (int i = 0; i < tmpNames.Count; i++)
-                {
-                    int index = tmpNames[i].IndexOf('#');
-                    if (index > 0)
-                    {
-                        tmpNames[i] = tmpNames[i].Substring(0, index);
-                    }
-                }
                 oppNames = new List<string>(tmpNames);
                 return true;
             }
@@ -321,30 +315,22 @@ namespace HDT_BGrank
         }
 
         // The code below is from: https://github.com/Zero-to-Heroes/unity-spy-.net4.5
-        private static dynamic[] GetPlayerTiles(dynamic leaderboardMgr)
+        private dynamic[] GetPlayerTiles(dynamic leaderboardMgr)
         {
-            try
-            {
-                return leaderboardMgr?["m_playerTiles"]?["_items"];
-            }
-            catch (Exception)
-            {
-                var result = new List<dynamic>();
-                var teams = leaderboardMgr["m_teams"]?["_items"];
+            List<dynamic> result = new List<dynamic>();
+            dynamic teams = leaderboardMgr["m_teams"]?["_items"];
 
-                for (uint i = 0; i < teams.size(); i++)
+            for (uint i = 0; i < teams.size(); i++)
+            {
+                dynamic team = teams[i];
+                if (team == null) { continue; }
+                dynamic tiles = team["m_playerLeaderboardCards"]?["_items"];
+                for (uint j = 0; j < tiles.size(); j++)
                 {
-                    var team = teams[i];
-                    if (team == null) { continue; }
-                    var tiles = team["m_playerLeaderboardCards"]?["_items"];
-                    for (uint j = 0; j < tiles.size(); j++)
-                    {
-                        result.Add(tiles[j]);
-                    }
+                    result.Add(tiles[j]);
                 }
-
-                return result.ToArray();
             }
+            return result.ToArray();
         }
     }
 }

@@ -68,14 +68,7 @@ namespace HDT_BGrank
 
         private void HiddenButton_Click(object sender, RoutedEventArgs e)
         {
-            if (LeaderText.IsVisible)
-            {
-                LeaderText.Visibility = Visibility.Hidden;
-            }
-            else
-            {
-                LeaderText.Visibility = Visibility.Visible;
-            }
+            LeaderText.Visibility = LeaderText.IsVisible ? Visibility.Hidden : Visibility.Visible;
         }
 
         private void LeaderText_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -127,8 +120,8 @@ namespace HDT_BGrank
 
         private void SetPosition(double nowLeft, double nowTop)
         {
-            double newLeft = Math.Max(0.0, Math.Min(nowLeft, Core.OverlayWindow.Width - LeaderText.ActualWidth*GridTransform.ScaleX));
-            double newTop = Math.Max(0.0, Math.Min(nowTop, Core.OverlayWindow.Height - LeaderText.ActualHeight*GridTransform.ScaleX));
+            double newLeft = Math.Max(0.0, Math.Min(nowLeft, Core.OverlayWindow.Width - (LeaderText.ActualWidth * GridTransform.ScaleX)));
+            double newTop = Math.Max(0.0, Math.Min(nowTop, Core.OverlayWindow.Height - (LeaderText.ActualHeight * GridTransform.ScaleX)));
             LeaderGrid.Margin = new Thickness(newLeft, newTop, 0.0, 0.0);
         }
     }

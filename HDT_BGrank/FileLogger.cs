@@ -17,8 +17,8 @@ namespace HDT_BGrank
     public class FileLogger
     {
         private string _folder;
-        private int _retainedDays;
-        private LogLevel _minLevel;
+        private readonly int _retainedDays;
+        private readonly LogLevel _minLevel;
         private StreamWriter _writer;
         private DateTime _currentDate;
         private static FileLogger _instance;
@@ -35,8 +35,8 @@ namespace HDT_BGrank
 
         public static void Initialize(LogLevel minLevel = LogLevel.Debug, int retainedDays = 5)
         {
-            if (_instance != null) return;
-            var target = Path.Combine(Config.AppDataPath, "BGrank");
+            if (_instance != null) { return; }
+            string target = Path.Combine(Config.AppDataPath, "BGrank");
             _instance = new FileLogger(target, minLevel, retainedDays);
         }
 
@@ -58,7 +58,9 @@ namespace HDT_BGrank
             try
             {
                 if (!Directory.Exists(_folder))
+                {
                     Directory.CreateDirectory(_folder);
+                }
             }
             catch
             {
@@ -82,14 +84,14 @@ namespace HDT_BGrank
             }
 
             _currentDate = date.Date;
-            var path = GetLogFileName(_currentDate);
-            var fs = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.Read);
+            string path = GetLogFileName(_currentDate);
+            FileStream fs = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.Read);
             _writer = new StreamWriter(fs, Encoding.UTF8) { AutoFlush = true };
         }
 
         private void RotateIfNeeded()
         {
-            var nowDate = DateTime.Now.Date;
+            DateTime nowDate = DateTime.Now.Date;
             if (nowDate != _currentDate)
             {
                 OpenWriterForDate(nowDate);
@@ -101,18 +103,20 @@ namespace HDT_BGrank
         {
             try
             {
-                var files = Directory.GetFiles(_folder, "BGrank-*.log");
-                var threshold = DateTime.Now.Date.AddDays(-_retainedDays);
-                foreach (var f in files)
+                string[] files = Directory.GetFiles(_folder, "BGrank-*.log");
+                DateTime threshold = DateTime.Now.Date.AddDays(-_retainedDays);
+                foreach (string f in files)
                 {
                     try
                     {
-                        var name = Path.GetFileNameWithoutExtension(f); // BGrank-YYYY-MM-DD
-                        var datePart = name.Substring("BGrank-".Length); // now "YYYY-MM-DD"
+                        string name = Path.GetFileNameWithoutExtension(f); // BGrank-YYYY-MM-DD
+                        string datePart = name.Substring("BGrank-".Length); // now "YYYY-MM-DD"
                         if (DateTime.TryParseExact(datePart, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dt))
                         {
                             if (dt.Date < threshold)
+                            {
                                 File.Delete(f);
+                            }
                         }
                     }
                     catch { /* ignore per-file errors */ }
@@ -123,7 +127,7 @@ namespace HDT_BGrank
 
         public void Log(LogLevel level, string message, Exception ex = null)
         {
-            if (level < _minLevel) return;
+            if (level < _minLevel) { return; }
 
             try
             {
@@ -148,10 +152,25 @@ namespace HDT_BGrank
             }
         }
 
-        public void Debug(string message) => Log(LogLevel.Debug, message);
-        public void Info(string message) => Log(LogLevel.Info, message);
-        public void Warn(string message) => Log(LogLevel.Warn, message);
-        public void Error(string message, Exception ex = null) => Log(LogLevel.Error, message, ex);
+        public void Debug(string message)
+        {
+            Log(LogLevel.Debug, message);
+        }
+
+        public void Info(string message)
+        {
+            Log(LogLevel.Info, message);
+        }
+
+        public void Warn(string message)
+        {
+            Log(LogLevel.Warn, message);
+        }
+
+        public void Error(string message, Exception ex = null)
+        {
+            Log(LogLevel.Error, message, ex);
+        }
 
         public void Clean()
         {

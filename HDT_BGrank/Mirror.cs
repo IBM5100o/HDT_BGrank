@@ -7,53 +7,39 @@ namespace HDT_BGrank
 {
     public class Mirror
     {
-        private Process _process;
-        private MonoScry _view;
         private MonoImage _root;
-
-        public string ImageName { get; set; }
-
-        public bool Active => _process != null;
-
-        public Process Proc => _process ??= Process.GetProcessesByName(ImageName).FirstOrDefault();
-
-        public MonoScry View
-        {
-            get
-            {
-                if (Proc == null)
-                {
-                    return null;
-                }
-                return _view ??= new MonoScry(Scry.connect(Proc.Id));
-            }
-        }
+        private string _myName;
 
         public MonoImage Root
         {
             get
             {
-                if (_root != null)
-                {
-                    return _root;
-                }
-                _root = View?.getImage(new List<string> { "Blizzard.T5.ServiceLocator" }, "2021.3.25.61228");
+                if (_root != null) { return _root; }
+
+                using Process proc = Process.GetProcessesByName("Hearthstone").FirstOrDefault();
+                using MonoScry view = new MonoScry(Scry.connect(proc.Id));
+                _root = view.getImage(new List<string> { "Blizzard.T5.ServiceLocator" }, "2021.3.25.61228");
                 return _root;
+            }
+        }
+
+        public string MyName
+        {
+            get
+            {
+                if (_myName != null) { return _myName; }
+
+                dynamic presenceMgr = Root?["BnetPresenceMgr"]?["s_instance"];
+                _myName = presenceMgr?["m_myPlayer"]?["m_account"]?["m_battleTag"]?["m_name"];
+                return _myName;
             }
         }
 
         public void Clean()
         {
-            try
-            {
-                _process?.Dispose();
-                _view?.Dispose();
-                _root?.Dispose();
-            }
-            catch { /* ignore dispose errors */ }
-            _process = null;
-            _view = null;
+            _root?.Dispose();
             _root = null;
+            _myName = null;
         }
     }
 }

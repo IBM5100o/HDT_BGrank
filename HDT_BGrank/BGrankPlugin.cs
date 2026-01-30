@@ -10,30 +10,20 @@ namespace HDT_BGrank
         private BGrank rank = null;
         private DateTime lastUpdate = DateTime.Now;
 
-        public string Author
-        {
-            get { return "IBM5100"; }
-        }
+        public string Name => "HDT_BGrank";
 
-        public string ButtonText
-        {
-            get { return "Reset"; }
-        }
+        public string Description => "A battlegrounds plugin shows opponents' MMR.";
 
-        public string Description
-        {
-            get { return "A battleground plugin searchs opponents' MMR for you."; }
-        }
+        public string Author => "IBM5100";
 
-        public string Name
-        {
-            get { return "HDT_BGrank"; }
-        }
+        public Version Version => new Version(1, 3, 2);
+
+        public string ButtonText => "Reset";
 
         public void OnButtonPress()
         {
             Settings.Reset();
-            if (MenuItem.IsChecked) 
+            if (MenuItem.IsChecked)
             {
                 RemoveComponents(false); // Reset, do not save settings
                 CreateComponents();
@@ -55,9 +45,9 @@ namespace HDT_BGrank
 
         public void OnUpdate()
         {
-            if (rank != null) 
+            if (rank != null)
             {
-                if ((DateTime.Now - lastUpdate).TotalSeconds >= 1) 
+                if ((DateTime.Now - lastUpdate).TotalSeconds >= 1)
                 {
                     lastUpdate = DateTime.Now;
                     rank.OnUpdate();
@@ -67,22 +57,14 @@ namespace HDT_BGrank
 
         private void CreateMenuItem()
         {
-            MenuItem = new MenuItem()
+            MenuItem = new MenuItem
             {
-                Header = "BGrank"
+                Header = "BGrank",
+                IsCheckable = true
             };
 
-            MenuItem.IsCheckable = true;
-
-            MenuItem.Checked += (sender, args) =>
-            {
-                CreateComponents();
-            };
-
-            MenuItem.Unchecked += (sender, args) =>
-            {
-                RemoveComponents();
-            };
+            MenuItem.Checked += (sender, args) => CreateComponents();
+            MenuItem.Unchecked += (sender, args) => RemoveComponents();
         }
 
         private void CreateComponents()
@@ -98,11 +80,5 @@ namespace HDT_BGrank
                 rank = null;
             }
         }
-
-        public Version Version
-        {
-            get { return new Version(1, 3, 2); }
-        }
-
     }
 }
