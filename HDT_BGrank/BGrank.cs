@@ -18,7 +18,7 @@ namespace HDT_BGrank
         private bool leaderBoardReady = false;
         private int nameErrors = 0;
 
-        private List<string> oppNames = null;
+        private Dictionary<string, int> oppDict = null;
         private Dictionary<string, string> leaderBoard = null;
 
         private Mirror mirror;
@@ -56,7 +56,7 @@ namespace HDT_BGrank
 
         private void ClearMemory()
         {
-            oppNames = null;
+            oppDict = null;
             leaderBoard = null;
             mirror.Clean();
         }
@@ -77,6 +77,8 @@ namespace HDT_BGrank
                 {
                     Reset(); // Reset again, just in case
                     isReset = false;
+                    oppDict = new Dictionary<string, int>();
+                    leaderBoard = new Dictionary<string, string>();
                     _ = GetLeaderBoard();
                 }
 
@@ -90,31 +92,59 @@ namespace HDT_BGrank
                 }
                 else if (leaderBoardReady)
                 {
-                    if (TryGetOppNames())
+                    var lobbyNames = GetLobbyNames();
+                    int playerCount = lobbyNames?.Count() ?? 0;
+                    if (playerCount == 0) { return; }
+                    var tileNames = GetTileNames();
+                    if (tileNames == null) { return; }
+                    List<string> playerNames = new List<string>();
+
+                    foreach (var name in lobbyNames)
                     {
-                        string region = GetRegionStr();
-                        string resultText = string.Empty;
-                        Dictionary<string, int> unsortDict = new Dictionary<string, int>();
-                        foreach (string name in oppNames)
+                        if (name != string.Empty && !playerNames.Contains(name))
                         {
+                            playerNames.Add(name);
+                        }
+                    }
+
+                    foreach (var name in tileNames)
+                    {
+                        if (name != string.Empty && !playerNames.Contains(name))
+                        {
+                            playerNames.Add(name);
+                        }
+                    }
+
+                    bool newNameCome = false;
+                    foreach (var name in playerNames)
+                    {
+                        if (name != mirror.MyName && !oppDict.ContainsKey(name))
+                        {
+                            newNameCome = true;
                             if (leaderBoard.TryGetValue(name, out string value))
                             {
                                 if (int.TryParse(value, out int rate))
                                 {
-                                    unsortDict.Add(name, rate);
+                                    oppDict.Add(name, rate);
                                 }
                                 else
                                 {
                                     FileLogger.Instance.Warn($"Parse MMR failed, set MMR as 0. player:'{name}' MMR:'{value}'");
-                                    unsortDict.Add(name, 0);
+                                    oppDict.Add(name, 0);
                                 }
                             }
                             else
                             {
-                                unsortDict.Add(name, 0);
+                                oppDict.Add(name, 0);
                             }
                         }
-                        foreach (var opp in unsortDict.OrderBy(x => x.Value))
+                    }
+
+                    if (newNameCome)
+                    {
+                        string region = GetRegionStr();
+                        string resultText = string.Empty;
+                        foreach (var opp in oppDict.OrderBy(x => x.Value))
                         {
                             if (opp.Value == 0)
                             {
@@ -133,8 +163,13 @@ namespace HDT_BGrank
                             }
                         }
                         leaderBoardPanel.DisplayResult(resultText);
-                        ClearMemory();
-                        done = true;
+
+                        if (!lobbyNames.Contains(string.Empty) || !tileNames.Contains(string.Empty) || playerNames.Count >= playerCount)
+                        {
+                            FileLogger.Instance.Info("All done, stop scanning player names and wait for next match.");
+                            ClearMemory();
+                            done = true;
+                        }
                     }
                 }
             }
@@ -151,7 +186,6 @@ namespace HDT_BGrank
                 return;
             }
 
-            leaderBoard = new Dictionary<string, string>();
             string path, url;
             int num_tries = 0;
             int max_tries = 3;
@@ -269,35 +303,58 @@ namespace HDT_BGrank
             };
         }
 
-        private bool TryGetOppNames()
+        private List<string> GetLobbyNames()
         {
             try
             {
-                string myName = mirror.MyName;
-                if (string.IsNullOrWhiteSpace(myName)) { return false; }
+                dynamic gameState = mirror.Root?["GameState"]?["s_instance"];
+                if (gameState == null) { return null; }
+                dynamic valueSlots = gameState["m_playerInfoMap"]?["valueSlots"];
+                if (valueSlots == null) { return null; }
+
+                List<string> resultNames = new List<string>();
+                for (uint i = 0; i < valueSlots.size(); i++)
+                {
+                    dynamic valueSlot = valueSlots[i];
+                    if (valueSlot == null) { continue; }
+                    string playerName = valueSlot["m_name"] ?? string.Empty;
+                    resultNames.Add(playerName);
+                }
+                return resultNames;
+            }
+            catch (Exception ex)
+            {
+                nameErrors++;
+                if (nameErrors < 5)
+                {
+                    FileLogger.Instance.Error("Fail to get opponent name from lobby", ex);
+                }
+                else if (nameErrors == 5)
+                {
+                    FileLogger.Instance.Error("Fail to get opponent name from lobby, further errors will be suppressed", ex);
+                }
+                return null;
+            }
+        }
+
+        private List<string> GetTileNames()
+        {
+            try
+            {
                 dynamic leaderboardMgr = mirror.Root?["PlayerLeaderboardManager"]?["s_instance"];
-                if (leaderboardMgr == null) { return false; }
+                if (leaderboardMgr == null) { return null; }
                 dynamic[] playerTiles = GetPlayerTiles(leaderboardMgr);
                 int numberOfPlayerTiles = playerTiles?.Length ?? 0;
-                if (numberOfPlayerTiles == 0) { return false; }
-                List<string> tmpNames = new List<string>();
+                if (numberOfPlayerTiles == 0) { return null; }
 
+                List<string> resultNames = new List<string>();
                 for (int i = 0; i < numberOfPlayerTiles; i++)
                 {
                     dynamic playerTile = playerTiles[i];
-                    // Info not available until the player mouses over the tile in the leaderboard, and there is no other way to get it
-                    string playerName = playerTile?["m_overlay"]?["m_heroActor"]?["m_playerNameText"]?["m_Text"];
-                    if (string.IsNullOrWhiteSpace(playerName)) { return false; }
-
-                    // For those who use the BattleTag MOD
-                    int index = playerName.IndexOf('#');
-                    if (index > 0) { playerName = playerName.Substring(0, index); }
-
-                    if (playerName != myName && !tmpNames.Contains(playerName)) { tmpNames.Add(playerName); }
+                    string playerName = playerTile?["m_overlay"]?["m_heroActor"]?["m_playerNameText"]?["m_Text"] ?? string.Empty;
+                    resultNames.Add(playerName);
                 }
-
-                oppNames = new List<string>(tmpNames);
-                return true;
+                return resultNames;
             }
             catch (Exception ex)
             {
@@ -310,7 +367,7 @@ namespace HDT_BGrank
                 {
                     FileLogger.Instance.Error("Fail to get opponent name, further errors will be suppressed", ex);
                 }
-                return false;
+                return null;
             }
         }
 
